@@ -56,6 +56,13 @@ bluetooth_off: str = "&#xeceb;"
 night_off: str = "&#xf162;"
 dnd_off: str = "&#xece9;"
 
+# Sensors
+battery_25: str = "&#xea2f;"
+battery_50: str = "&#xea30;"
+battery_75: str = "&#xea31;"
+battery_100: str = "&#xea32;"
+battery_charging: str = "&#xea33;"
+
 # Bluetooth
 bluetooth_connected: str = "&#xecea;"
 bluetooth_disconnected: str = "&#xf081;"
@@ -87,6 +94,10 @@ cancel: str = "&#xeb55;"
 
 # Config
 config: str = "&#xeb20;"
+
+# Logos
+firefox: str = "&#xecfd;"
+spotify: str = "&#xfe86;"
 
 exceptions: list[str] = ['font_family', 'font_weight', 'span']
 
