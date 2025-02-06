@@ -20,16 +20,18 @@ class Cava:
 	CLOSING = 3
 
 	def __init__(self, mainapp):
-		self.cavaconfig = mainapp.cavaconfig
-		self.path = self.cavaconfig["output"]["raw_target"]
+		self.bars = 20
+		self.path = "/tmp/cava.fifo"
+
+		self.cava_config_file = os.path.expanduser("~/.config/Ax-Shell/config/cavalcade/cava.ini")
 		self.data_handler = mainapp.draw.update
-		self.command = ["cava", "-p", self.cavaconfig.file]
+		self.command = ["cava", "-p", self.cava_config_file]
 		self.state = self.NONE
 
 		self.env = dict(os.environ)
 		self.env["LC_ALL"] = "en_US.UTF-8"  # not sure if it's necessary
 
-		is_16bit = self.cavaconfig["output"]["bit_format"] == "16bit"
+		is_16bit = True
 		self.byte_type, self.byte_size, self.byte_norm = ("H", 2, 65535) if is_16bit else ("B", 1, 255)
 
 		if not os.path.exists(self.path):
@@ -54,8 +56,8 @@ class Cava:
 
 	def _read_output(self):
 		fifo = open(self.path, "rb")
-		chunk = self.byte_size * self.cavaconfig["general"]["bars"]  # number of bytes for given format
-		fmt = self.byte_type * self.cavaconfig["general"]["bars"]  # pack of given format
+		chunk = self.byte_size * self.bars  # number of bytes for given format
+		fmt = self.byte_type * self.bars  # pack of given format
 		while True:
 			data = fifo.read(chunk)
 			if len(data) < chunk:

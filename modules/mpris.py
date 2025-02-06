@@ -18,7 +18,7 @@ from fabric.widgets.box import Box
 from modules.cavalcade_modules.cava_drawing import Spectrum
 from modules.cavalcade_modules.cava import Cava
 from modules.cavalcade_modules.mpris import MprisPlayer, MprisPlayerManager
-from config.cava_config import CavaConfig, MainConfig
+
 
 
 import subprocess
@@ -157,12 +157,8 @@ class SpectrumRender():
     def __init__(self, mode = None, **kwargs):
         super().__init__(**kwargs)
         self.mode = mode
-        self.cavaconfig = CavaConfig()
-        self.config = MainConfig()
-        if self.mode == 'in':
-            self.cavaconfig = cava_config.CavaConfigIn()
-            self.config = cava_config.MainConfigIn()
-        
-        self.draw = Spectrum(self.config, self.cavaconfig)
+
+      
+        self.draw = Spectrum()
         self.cava = Cava(self)
         self.cava.start()
