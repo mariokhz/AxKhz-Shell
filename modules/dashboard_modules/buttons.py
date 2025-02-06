@@ -100,7 +100,6 @@ class Buttons(Box):
                         markup=icons.bluetooth,
                     ),
                     Box(
-                        name="bluetooth-text",
                         orientation="v",
                         h_align="start",
                         v_align="center",

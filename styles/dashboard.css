@@ -56,16 +56,6 @@
   font-size: 16px;
 }
 
-#network-label,
-#bluetooth-label,
-#night-mode-label,
-#caffeine-label {
-  color: var(--shadow);
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: -4px;
-}
-
 /* Status Styles */
 
 #network-ssid,
@@ -154,17 +144,15 @@
 
 #box-1 {
   min-width: 196px;
-  min-height: 344px;
 }
 
 #box-2 {
   min-width: 518px;
-  min-height: 248px;
 }
 
 #box-3 {
   min-width: 88px;
-  min-height: 248px;
+  min-height: 226px;
 }
 
 #box-x {
