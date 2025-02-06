@@ -19,6 +19,10 @@ from utils.icon_resolver import IconResolver
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, Gtk
 
+screen = Gdk.Screen.get_default()
+CURRENT_WIDTH = screen.get_width()
+CURRENT_HEIGHT = screen.get_height()
+
 icon_resolver = IconResolver()
 connection = Hyprland()
 SCALE = 0.1
@@ -45,7 +49,7 @@ def createSurfaceFromWidget(widget: Gtk.Widget) -> cairo.ImageSurface:
 class HyprlandWindowButton(Button):
     def __init__(
         self,
-        window: Box,  # Ahora la ventana es solo un Box
+        window: Box,
         title: str,
         address: str,
         app_id: str,
@@ -58,9 +62,14 @@ class HyprlandWindowButton(Button):
         self.app_id = app_id
         self.title = title
         self.window: Box = window
+
+        # Compute dynamic icon sizes based on the button size.
+        # Using the minimum dimension of the button for scaling.
+        icon_size_main = int(min(self.size) * 0.5)  # adjust factor as needed
+
         super().__init__(
             name="overview-client-box",
-            image=Image(pixbuf=icon_resolver.get_icon_pixbuf(app_id, 36)),
+            image=Image(pixbuf=icon_resolver.get_icon_pixbuf(app_id, icon_size_main)),
             tooltip_text=title,
             size=size,
             on_clicked=self.on_button_click,
@@ -83,24 +92,24 @@ class HyprlandWindowButton(Button):
             actions=Gdk.DragAction.COPY,
         )
 
-        # Conectar el evento de tecla para cerrar con SHIFT+ENTER o SHIFT+ESPACIO
         self.connect("key_press_event", self.on_key_press_event)
 
     def on_key_press_event(self, widget, event):
-        # Verificamos si se mantiene SHIFT y se presiona ENTER o ESPACIO
         if event.get_state() & Gdk.ModifierType.SHIFT_MASK:
             if event.keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter, Gdk.KEY_space):
                 connection.send_command(f"/dispatch closewindow address:{self.address}")
-                return True  # Indica que el evento fue manejado
+                return True
         return False
 
     def update_image(self, image):
+        # Compute overlay icon size dynamically.
+        icon_size_overlay = int(min(self.size) * 0.6)  # adjust factor as needed
         self.set_image(
             Overlay(
                 child=image,
                 overlays=Image(
                     name="overview-icon",
-                    pixbuf=icon_resolver.get_icon_pixbuf(self.app_id, 24),
+                    pixbuf=icon_resolver.get_icon_pixbuf(self.app_id, icon_size_overlay),
                     h_align="center",
                     v_align="end",
                     tooltip_text=self.title,
@@ -111,29 +120,24 @@ class HyprlandWindowButton(Button):
     def on_button_click(self, *_):
         connection.send_command(f"/dispatch focuswindow address:{self.address}")
 
+
 class WorkspaceEventBox(EventBox):
     def __init__(self, workspace_id: int, fixed: Gtk.Fixed | None = None):
         self.fixed = fixed
         super().__init__(
             h_expand=True,
             v_expand=True,
-            size=(int(1920 * SCALE), int(1080 * SCALE)),
+            size=(int(CURRENT_WIDTH * SCALE), int(CURRENT_HEIGHT * SCALE)),
             name="overview-workspace-bg",
             child=fixed
             if fixed
-            # TODO this is lazy, do it right later lol
             else Label(
                 name="overview-add-label",
                 h_expand=True,
                 v_expand=True,
                 markup=icons.circle_plus,
             ),
-            on_drag_data_received=lambda _w,
-            _c,
-            _x,
-            _y,
-            data,
-            *_: connection.send_command(
+            on_drag_data_received=lambda _w, _c, _x, _y, data, *_: connection.send_command(
                 f"/dispatch movetoworkspacesilent {workspace_id},address:{data.get_data().decode()}"
             ),
         )
@@ -144,6 +148,7 @@ class WorkspaceEventBox(EventBox):
         )
         if fixed:
             fixed.show_all()
+
 
 
 class Overview(Box):

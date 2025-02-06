@@ -168,11 +168,11 @@ bind = {bind_vars['prefix_css']}, {bind_vars['suffix_css']}, exec, $fabricSend '
 source = {home}/.config/Ax-Shell/config/hypr/colors.conf
 
 general {{
-    col.active_border = 0xff$surface_bright
+    col.active_border = 0xff$primary
     col.inactive_border = 0xff$surface
     gaps_in = 2
     gaps_out = 4
-    border_size = 1
+    border_size = 2
     layout = dwindle
 }}
 
@@ -185,7 +185,7 @@ decoration {{
         contrast = 1
         brightness = 1
     }}
-    rounding = 15
+    rounding = 14
     shadow {{
       enabled = true
       range = 10

@@ -1,0 +1,24 @@
+#pin-add {
+  font-size: 24px;
+  color: var(--surface-bright);
+}
+
+#pin-cell-box {
+  background-color: var(--surface);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+#pin-file {
+  font-weight: bold;
+  margin-top: -16px;
+  margin-bottom: 16px;
+}
+
+#pin-add:hover {
+  color: var(--primary);
+}
+
+#pin-text {
+  font-weight: bold;
+}

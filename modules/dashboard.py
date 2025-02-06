@@ -10,6 +10,7 @@ from gi.repository import GLib, Gtk, Vte, Pango
 import modules.icons as icons
 from modules.dashboard_modules.buttons import Buttons
 from modules.dashboard_modules.widgets import Widgets
+from modules.pins import Pins
 from modules.calendar import Calendar
 from modules.kanban import Kanban
 
@@ -22,7 +23,7 @@ class Dashboard(Box):
             h_align="center",
             v_align="start",
             h_expand=True,
-            v_expand=True,
+            # v_expand=True,
             visible=True,
             all_visible=True,
         )
@@ -30,7 +31,7 @@ class Dashboard(Box):
         self.notch = kwargs["notch"]
 
         self.widgets = Widgets(notch=self.notch)
-
+        self.pins = Pins()
         self.kanban = Kanban()
         self.calendar = Calendar()
 
@@ -52,7 +53,7 @@ class Dashboard(Box):
 
         self.label_2 = Label(
             name="label-2",
-            label="Clipboard",
+            label="Pins",
         )
 
         self.label_3 = Label(
@@ -82,7 +83,7 @@ class Dashboard(Box):
         self.terminal.set_font(Pango.FontDescription("ZedMono Nerd Font"))
 
         self.stack.add_titled(self.widgets, "widgets", "Widgets")
-        self.stack.add_titled(self.label_2, "clipboard", "Clipboard")
+        self.stack.add_titled(self.pins, "pins", "Pins")
         self.stack.add_titled(self.kanban, "kanban", "Kanban")
         self.stack.add_titled(self.calendar, "calendar", "Calendar")
         self.stack.add_titled(self.terminal, "terminal", "Terminal")

@@ -21,11 +21,16 @@
   padding: 4px;
 }
 
-#kanban-note {
+#kanban-note,
+#inline-editor {
   background-color: var(--shadow);
   border-radius: 12px;
   padding: 8px;
   margin-bottom: 4px;
+}
+
+#inline-editor {
+  border: 2px solid var(--surface-bright);
 }
 
 #add-btn {

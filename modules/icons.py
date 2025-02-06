@@ -88,6 +88,9 @@ vol_high: str = "&#xeb51;"
 # Overview
 circle_plus: str = "&#xea69;"
 
+# Pins
+copy_plus: str = "&#xfdae;"
+
 # Confirm
 accept: str = "&#xea5e;"
 cancel: str = "&#xeb55;"

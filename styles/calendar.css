@@ -13,7 +13,7 @@
 #weekday-row {
   background-color: var(--shadow);
   border-radius: 16px;
-  padding: 16px;
+  padding: 8px;
 }
 
 #month-label,
