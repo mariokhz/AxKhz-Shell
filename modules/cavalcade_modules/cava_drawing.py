@@ -51,7 +51,7 @@ class Spectrum:
 		cr.set_source_rgba(*self.color)
 		#cr.set_source_rgba(170/255, 170/255, 1, 1)
 
-		dx = 0
+		dx = 3
 
 		center_y = self.sizes.area.height / 2  # Centro vertical del área de dibujo
 		for i, value in enumerate(self.audio_sample):
@@ -67,11 +67,11 @@ class Spectrum:
 
 			# Dibujar rectángulo
 			cr.rectangle(dx, center_y - height, width, height * 2)
-			#cr.rectangle(0, center_y, self.sizes.area.width, 20)
 			cr.arc(dx + radius, center_y - height, radius, 0, 2*pi)
 			cr.arc(dx + radius, center_y + height, radius, 0, 2*pi)
 
 			cr.close_path()
+			#cr.rectangle(0, center_y, self.sizes.area.width, 20)
 
 			dx += width + self.sizes.padding
 		cr.fill()
