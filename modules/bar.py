@@ -7,7 +7,8 @@ from fabric.widgets.wayland import WaylandWindow as Window
 from fabric.hyprland.widgets import Workspaces, WorkspaceButton
 from fabric.utils.helpers import get_relative_path, exec_shell_command_async
 from gi.repository import GLib, Gdk
-from modules.systemtray import SystemTray
+# from modules.systemtray import SystemTray
+from modules.sensors import BatteryBox
 from config.config import open_config
 import modules.icons as icons
 import modules.data as data
@@ -28,7 +29,7 @@ class Bar(Window):
         
         self.workspaces = Workspaces(
             name="workspaces",
-            invert_scroll=True,
+            invert_scroll=False,
             empty_scroll=True,
             v_align="fill",
             orientation="h",
@@ -36,8 +37,10 @@ class Bar(Window):
             buttons=[WorkspaceButton(id=i, label="") for i in range(1, 11)],
         )
 
-        self.systray = SystemTray()
+        # self.systray = SystemTray()
         # self.systray = SystemTray(name="systray", spacing=8, icon_size=20)
+
+        self.battery_box = BatteryBox()
 
         self.date_time = DateTime(name="date-time", formatters=["%H:%M"], h_align="center", v_align="center")
 
@@ -116,10 +119,11 @@ class Bar(Window):
                 spacing=4,
                 orientation="h",
                 children=[
-                    self.button_color,
-                    self.systray,
-                    self.button_config,
                     self.date_time,
+                    self.button_color,
+                    self.battery_box,
+                    # self.systray,
+                    self.button_config,
                     self.button_power,
                 ],
             ),

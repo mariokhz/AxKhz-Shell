@@ -15,8 +15,8 @@
 * {
   all: unset;
   color: var(--foreground);
-  font-size: 11pt;
-  font-family: "Zed Sans";
+  font-size: 10pt;
+  font-family: "Cantarell Bold";
   border-radius: 16px;
 }
 
@@ -147,6 +147,24 @@ tooltip > * {
   font-size: 20px;
   padding: 4px;
   border-radius: 12px;
+  transition: all 0.1s ease;
+}
+
+#battery-percentage-label {
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: bold;
+  padding: 4px;
+  border-radius: 11px;
+  transition: all 0.1s ease;
+}
+
+#battery-icon-label {
+  color: var(--primary);
+  font-size: 22px;
+  margin-right: -4px;
+  padding: 1px;
+  border-radius: 11px;
   transition: all 0.1s ease;
 }
 
