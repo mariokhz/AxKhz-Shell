@@ -12,6 +12,7 @@
 @import url("./styles/overview.css");
 @import url("./styles/bluetooth.css");
 @import url("./styles/power.css");
+@import url("./styles/mpris.css");
 
 * {
   all: unset;

@@ -125,8 +125,8 @@ class Mpris(Box, GObject.GObject):
             
             if self.player.title is not None:
                 title = self.paused_icon + ' ' + self.player.title
-                if len(self.player.title) > 30:
-                    title = self.paused_icon + ' ' + self.player.title[:30] + '...'
+                if len(self.player.title) > 24:
+                    title = self.paused_icon + ' ' + self.player.title[:24] + '...'
                 
             self.paused_button.get_child().set_markup(title)
             self.center_box.set_center_widget(self.paused_revealer)
