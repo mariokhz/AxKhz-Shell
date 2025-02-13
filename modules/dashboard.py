@@ -80,7 +80,7 @@ class Dashboard(Box):
             None,                                  # GLib.Cancellable
             None                                   # Callback de finalización
         )
-        self.terminal.set_font(Pango.FontDescription("ZedMono Nerd Font"))
+        self.terminal.set_font(Pango.FontDescription("Fira Code SemiBold"))
 
         self.stack.add_titled(self.widgets, "widgets", "Widgets")
         self.stack.add_titled(self.pins, "pins", "Pins")

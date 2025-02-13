@@ -36,7 +36,11 @@ class Bar(Window):
             spacing=10,
             buttons=[WorkspaceButton(id=i, label="") for i in range(1, 11)],
         )
-
+        # Borrar workspace especial
+        for button in self.workspaces.get_child():
+            if button.id in [-99, -98]:
+                self.workspaces.remove_button(button)
+            
         # self.systray = SystemTray()
         # self.systray = SystemTray(name="systray", spacing=8, icon_size=20)
 

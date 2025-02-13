@@ -1,0 +1,18 @@
+#button-bar {
+  padding: 4px;
+  min-width: 28px;
+  min-height: 28px;
+  margin-top: 4px;
+  border-radius: 16px;
+  background-color: var(--shadow);
+  transition: all 0.1s ease;
+}
+
+#button-paused label {
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: bold;
+  padding: 4px;
+  border-radius: 12px;
+  transition: all 0.1s ease;
+}

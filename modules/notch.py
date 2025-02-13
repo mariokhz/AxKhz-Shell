@@ -28,7 +28,7 @@ class Notch(Window):
             name="notch",
             layer="top",
             anchor="top",
-            margin="-40px 10px 10px 10px",
+            margin="-41px 10px 10px 10px",
             keyboard_mode="none",
             exclusivity="normal",
             visible=True,
@@ -43,13 +43,13 @@ class Notch(Window):
         self.power = PowerMenu(notch=self)
         self.mpris = Mpris()
 
-        self.bluetooth = BluetoothConnections()
+        self.bluetooth = BluetoothConnections(notch=self)
 
         self.active_window = ActiveWindow(
             name="hyprland-window",
             h_expand=True,
             formatter=FormattedString(
-                f"{{'{data.USERNAME}@{data.HOSTNAME}' if not win_class or win_class == 'unknown' else truncate(win_class, 32)}}",
+                f"{{'{data.USERNAME}@{data.HOSTNAME}' if not win_class or win_class == 'unknown' else truncate(win_title, 32)}}",
                 truncate=truncate,
             ),
         )
@@ -66,7 +66,7 @@ class Notch(Window):
             v_expand=True,
             h_expand=True,
             transition_type="crossfade",
-            transition_duration=250,
+            transition_duration=100,
             children=[
                 self.compact,
                 self.launcher,

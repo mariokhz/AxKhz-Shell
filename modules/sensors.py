@@ -57,7 +57,7 @@ class BatteryBox(Box):
         return True
     
     def notify(self, percentage, secsleft):
-        exec_shell_command_async(f"notify-send '{percentage}% útil' '{secsleft} segundos restantes' -u critical")
+        exec_shell_command_async(f"notify-send '{percentage}% útil' '{secsleft} segundos restantes' -u critical -a 'Batería crítica'")
   
 class VitalsBox(Box):
     def __init__(self, **kwargs):
