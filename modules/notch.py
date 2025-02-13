@@ -28,7 +28,7 @@ class Notch(Window):
             name="notch",
             layer="top",
             anchor="top",
-            margin="-40px 10px 10px 10px",
+            margin="-41px 10px 10px 10px",
             keyboard_mode="none",
             exclusivity="normal",
             visible=True,
@@ -49,7 +49,7 @@ class Notch(Window):
             name="hyprland-window",
             h_expand=True,
             formatter=FormattedString(
-                f"{{'{data.USERNAME}@{data.HOSTNAME}' if not win_class or win_class == 'unknown' else truncate(win_class, 32)}}",
+                f"{{'{data.USERNAME}@{data.HOSTNAME}' if not win_class or win_class == 'unknown' else truncate(win_title, 32)}}",
                 truncate=truncate,
             ),
         )
