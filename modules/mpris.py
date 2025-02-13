@@ -15,9 +15,9 @@ import modules.icons as icons
 from gi.repository import Gtk, Gdk
 from fabric.widgets.box import Box
 
-from modules.cavalcade_modules.cava_drawing import Spectrum
-from modules.cavalcade_modules.cava import Cava
-from modules.cavalcade_modules.mpris import MprisPlayer, MprisPlayerManager
+#from modules.cavalcade_modules.cava_drawing import Spectrum
+from modules.cavalcade import Cava, Spectrum
+from services.mpris import MprisPlayer, MprisPlayerManager
 
 
 
