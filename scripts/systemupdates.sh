@@ -24,7 +24,7 @@ check_arch_updates() {
     total_updates=$((official_updates + aur_updates + flatpak_updates))
 
     # Build the tooltip for official updates
-    tooltip="󰣇 Official $official_updates\n󰮯 AUR $aur_updates"
+    tooltip="󰣇  Official $official_updates\n󰮯  AUR $aur_updates"
 
     # Check if flatpak is installed
     if command -v flatpak &>/dev/null; then
@@ -32,7 +32,7 @@ check_arch_updates() {
         flatpak_updates=$(flatpak remote-ls --updates | wc -l)
 
         # Append Flatpak updates to the tooltip
-        tooltip="$tooltip\n Flatpak $flatpak_updates"
+        tooltip="$tooltip\n  Flatpak $flatpak_updates"
 
         # Recalculate total updates
         total_updates=$((official_updates + aur_updates + flatpak_updates))

@@ -58,12 +58,13 @@ class UpdatesWidget(Button):
         self.overlay.add(self.update_box_revealer)
         
         
+        
         self.overlay.add_overlay(self.updated_box_revealer)
 
-        self.box = CenterBox()
-        self.box.pack_start(self.overlay, True, True, 0)
+        #self.box = CenterBox()
+        #self.box.pack_start(self.overlay, True, True, 0)
 
-        self.children = self.box
+        self.children = self.overlay
             
         
 
@@ -72,7 +73,7 @@ class UpdatesWidget(Button):
         self.connect("button-press-event", self.on_button_press)
 
         # Set up a repeater to call the update method at specified intervals
-        invoke_repeater(1000, self.update, initial_call=True)
+        invoke_repeater(60000, self.update, initial_call=True)
 
     def update_values(self, value: str):
         # Parse the JSON value
@@ -81,13 +82,14 @@ class UpdatesWidget(Button):
         # Update the label if enabled
         self.update_level_label.set_label(value["total"])
 
+        self.update_box_revealer.set_reveal_child(True)
+        self.updated_box_revealer.set_reveal_child(False)
+
         if value["total"] == "0":
             self.update_box_revealer.set_reveal_child(False)
             self.updated_box_revealer.set_reveal_child(True)
 
-        else:
-            self.update_box_revealer.set_reveal_child(True)
-            self.updated_box_revealer.set_reveal_child(False)
+
 
         # Update the tooltip if enabled
         
