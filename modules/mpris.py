@@ -16,7 +16,7 @@ from gi.repository import Gtk, Gdk
 from fabric.widgets.box import Box
 
 #from modules.cavalcade_modules.cava_drawing import Spectrum
-from modules.cavalcade import Cava, Spectrum
+from modules.cavalcade import Cava, SpectrumRender
 from services.mpris import MprisPlayer, MprisPlayerManager
 
 
@@ -153,12 +153,3 @@ class Mpris(Box, GObject.GObject):
         self.paused_revealer.set_reveal_child(False)
         self.show()
 
-class SpectrumRender():
-    def __init__(self, mode = None, **kwargs):
-        super().__init__(**kwargs)
-        self.mode = mode
-
-      
-        self.draw = Spectrum()
-        self.cava = Cava(self)
-        self.cava.start()
