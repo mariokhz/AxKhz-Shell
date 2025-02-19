@@ -5,7 +5,7 @@ from fabric.widgets.box import Box
 from fabric.widgets.centerbox import CenterBox
 from fabric.widgets.label import Label
 from fabric.widgets.revealer import Revealer
-from fabric.widgets.overlay import Overlay
+from fabric.widgets.stack import Stack
 import modules.icons as icons
 from loguru import logger
 
@@ -39,34 +39,18 @@ class UpdatesWidget(Button):
             center_children=(self.update_icon, self.update_level_label),
         )
 
-        self.update_box_revealer = Revealer()
-        self.update_box_revealer.set_transition_type(Gtk.RevealerTransitionType.CROSSFADE)
-        self.update_box_revealer.add(self.update_box)
-        self.update_box_revealer.set_reveal_child(True)
-
         self.updated_box = CenterBox(
             center_children=(self.updated_icon),
         )
 
-        self.updated_box_revealer = Revealer()
-        self.updated_box_revealer.set_transition_type(Gtk.RevealerTransitionType.CROSSFADE)
-        self.updated_box_revealer.add(self.updated_box)
-        self.updated_box_revealer.set_reveal_child(False)
+        self.stack = Stack()
+        self.stack.add_named(self.update_box, "update_box")
+        self.stack.add_named(self.updated_box, "updated_box")
+        self.stack.set_visible_child_name("update_box")
 
-        self.overlay = Overlay()
-        
-        self.overlay.add(self.update_box_revealer)
-        
-        
-        
-        self.overlay.add_overlay(self.updated_box_revealer)
-
-        #self.box = CenterBox()
-        #self.box.pack_start(self.overlay, True, True, 0)
-
-        self.children = self.overlay
-            
-        
+        self.children = Box(
+            children=self.stack,
+        )
 
         # Show initial value of 0 if label is enabled
 
@@ -82,17 +66,12 @@ class UpdatesWidget(Button):
         # Update the label if enabled
         self.update_level_label.set_label(value["total"])
 
-        self.update_box_revealer.set_reveal_child(True)
-        self.updated_box_revealer.set_reveal_child(False)
-
         if value["total"] == "0":
-            self.update_box_revealer.set_reveal_child(False)
-            self.updated_box_revealer.set_reveal_child(True)
-
-
+            self.stack.set_visible_child_name("updated_box")
+        else:
+            self.stack.set_visible_child_name("update_box")
 
         # Update the tooltip if enabled
-        
         self.set_tooltip_text(value["tooltip"])
         return True
 
