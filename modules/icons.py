@@ -56,6 +56,9 @@ bluetooth_off: str = "&#xeceb;"
 night_off: str = "&#xf162;"
 dnd_off: str = "&#xece9;"
 
+update: str = "&#xfa0a;"
+updated: str = "&#xf704;"
+
 # Sensors
 battery_25: str = "&#xea2f;"
 battery_50: str = "&#xea30;"

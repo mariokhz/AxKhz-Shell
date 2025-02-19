@@ -152,6 +152,14 @@ tooltip > * {
   transition: all 0.1s ease;
 }
 
+#button-icon-label {
+  color: var(--primary);
+  font-size: 22px;
+  padding: 1px;
+  border-radius: 11px;
+  transition: all 0.1s ease;
+}
+
 #battery-percentage-label {
   color: var(--primary);
   font-size: 10px;
