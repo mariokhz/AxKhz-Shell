@@ -72,7 +72,7 @@ class UpdatesWidget(Button):
         self.connect("button-press-event", self.on_button_press)
 
         # Set up a repeater to call the update method at specified intervals
-        invoke_repeater(500, self.update, initial_call=True)
+        invoke_repeater(1000, self.update, initial_call=True)
 
     def update_values(self, value: str):
         # Parse the JSON value
@@ -84,6 +84,10 @@ class UpdatesWidget(Button):
         if value["total"] == "0":
             self.update_box_revealer.set_reveal_child(False)
             self.updated_box_revealer.set_reveal_child(True)
+
+        else:
+            self.update_box_revealer.set_reveal_child(True)
+            self.updated_box_revealer.set_reveal_child(False)
 
         # Update the tooltip if enabled
         
