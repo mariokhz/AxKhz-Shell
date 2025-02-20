@@ -16,7 +16,7 @@ from gi.repository import Gtk, Gdk
 from fabric.widgets.box import Box
 
 #from modules.cavalcade_modules.cava_drawing import Spectrum
-from modules.cavalcade import Cava, SpectrumRender
+from modules.cavalcade import SpectrumRender
 from services.mpris import MprisPlayer, MprisPlayerManager
 
 

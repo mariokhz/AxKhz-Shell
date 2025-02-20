@@ -52,6 +52,10 @@ class UpdatesWidget(Button):
             children=self.stack,
         )
 
+        # Ensure the stack resizes to the current visible child
+        self.stack.set_homogeneous(False)
+        self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
+
         # Show initial value of 0 if label is enabled
 
         self.connect("button-press-event", self.on_button_press)
