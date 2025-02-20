@@ -194,3 +194,14 @@ class Spectrum:
 	def color_update(self):
 		"""Set drawing color according current settings"""
 		self.color = Gdk.RGBA(red=0.619608, green=0.792157, blue=0.988235, alpha=1.000000)
+
+class SpectrumRender():
+    def __init__(self, mode = None, **kwargs):
+        super().__init__(**kwargs)
+        self.mode = mode
+
+      
+        self.draw = Spectrum()
+        self.cava = Cava(self)
+        self.cava.start()
+		

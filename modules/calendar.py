@@ -48,7 +48,7 @@ class Calendar(Gtk.Box):
             label = Gtk.Label(label=day.upper(), name="weekday-label")
             self.weekday_row.pack_start(label, True, True, 0)
 
-        cal = calendar.Calendar(firstweekday=6)
+        cal = calendar.Calendar(firstweekday=0)
         month_days = cal.monthdayscalendar(self.current_year, self.current_month)
 
         # Ensure consistent number of rows (6) and placeholders for missing days
@@ -89,7 +89,7 @@ class Calendar(Gtk.Box):
 
     def get_weekday_initials(self):
         # Get the localized weekday initials from the system
-        return [datetime(2023, 1, i + 1).strftime("%a")[:1] for i in range(7)]
+        return [datetime(2024, 1, i + 1).strftime("%a")[:1] for i in range(7)]
 
     def on_prev_month_clicked(self, widget):
         if self.current_month == 1:

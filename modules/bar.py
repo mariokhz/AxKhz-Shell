@@ -7,11 +7,12 @@ from fabric.widgets.wayland import WaylandWindow as Window
 from fabric.hyprland.widgets import Workspaces, WorkspaceButton
 from fabric.utils.helpers import get_relative_path, exec_shell_command_async
 from gi.repository import GLib, Gdk
-# from modules.systemtray import SystemTray
+from modules.systemtray import SystemTray
 from modules.sensors import BatteryBox
 from config.config import open_config
 import modules.icons as icons
 import modules.data as data
+from modules.updates import UpdatesWidget
 
 class Bar(Window):
     def __init__(self, **kwargs):
@@ -41,10 +42,12 @@ class Bar(Window):
             if button.id in [-99, -98]:
                 self.workspaces.remove_button(button)
             
-        # self.systray = SystemTray()
+        self.systray = SystemTray()
         # self.systray = SystemTray(name="systray", spacing=8, icon_size=20)
 
         self.battery_box = BatteryBox()
+
+        self.updates = UpdatesWidget()
 
         self.date_time = DateTime(name="date-time", formatters=["%H:%M"], h_align="center", v_align="center")
 
@@ -124,9 +127,10 @@ class Bar(Window):
                 orientation="h",
                 children=[
                     self.date_time,
+                    self.updates,
                     self.button_color,
                     self.battery_box,
-                    # self.systray,
+                    self.systray,
                     self.button_config,
                     self.button_power,
                 ],
