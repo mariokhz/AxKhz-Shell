@@ -14,6 +14,11 @@ import modules.data as data
 from modules.battery import Battery
 from modules.controls import ControlSmall
 
+from modules.sensors import NetworkApplet
+
+from modules.volume import VolumeWidget
+from modules.updates import UpdatesWidget
+
 class Bar(Window):
     def __init__(self, **kwargs):
         super().__init__(
@@ -27,6 +32,8 @@ class Bar(Window):
         )
 
         self.notch = kwargs.get("notch", None)
+
+        self.network_applet = NetworkApplet()
         
         self.workspaces = Workspaces(
             name="workspaces",
@@ -37,11 +44,26 @@ class Bar(Window):
             spacing=10,
             buttons=[WorkspaceButton(id=i, label="") for i in range(1, 11)],
         )
-
+        self.ignored_workspaces = [-99, -98]
+        self.hide_ignored_workspaces()
+        self.workspaces.connection.connect("event::workspacev2", self.hide_ignored_workspaces)
+        self.workspaces.connection.connect("event::createworkspacev2", self.hide_ignored_workspaces)
+        self.workspaces.connection.connect("event::urgent", self.hide_ignored_workspaces)
+        
         self.systray = SystemTray()
         # self.systray = SystemTray(name="systray", spacing=8, icon_size=20)
 
         self.date_time = DateTime(name="date-time", formatters=["%H:%M"], h_align="center", v_align="center")
+      
+        self.updates = UpdatesWidget()
+        self.updates.connect("enter-notify-event", self.on_button_enter)
+        self.updates.connect("leave-notify-event", self.on_button_leave)
+
+        self.volume = VolumeWidget()
+        self.volume.speaker_event_box.connect("enter-notify-event", self.on_button_enter)
+        self.volume.speaker_event_box.connect("leave-notify-event", self.on_button_leave)
+        self.volume.microphone_event_box.connect("enter-notify-event", self.on_button_enter)
+        self.volume.microphone_event_box.connect("leave-notify-event", self.on_button_leave)
 
         self.button_apps = Button(
             name="button-bar",
@@ -112,7 +134,8 @@ class Bar(Window):
                 orientation="h",
                 spacing=4,
                 children=[
-                    self.control,
+                    #self.control,
+                    self.volume,
                     self.battery,
                 ],
             ),
@@ -138,6 +161,8 @@ class Bar(Window):
                     self.button_apps,
                     Box(name="workspaces-container", children=[self.workspaces]),
                     self.button_overview,
+                    self.date_time,
+                    self.network_applet,
                 ]
             ),
             end_children=Box(
@@ -147,9 +172,12 @@ class Bar(Window):
                 children=[
                     self.boxed_revealer,
                     self.button_color,
+                    self.updates,
+                    self.battery,
+                    #self.control,
+                    self.volume,
                     self.systray,
                     self.button_config,
-                    self.date_time,
                     self.button_power,
                 ],
             ),
@@ -199,3 +227,9 @@ class Bar(Window):
             self.bar_inner.add_style_class("hidden")
         else:
             self.bar_inner.remove_style_class("hidden")
+
+    def hide_ignored_workspaces(self, *args):
+        for button in self.workspaces.get_child():
+            if button.id in self.ignored_workspaces:
+                self.workspaces.remove_button(button)
+        

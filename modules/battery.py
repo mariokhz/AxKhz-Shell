@@ -1,5 +1,6 @@
 import subprocess
 import re
+import psutil
 from fabric.widgets.box import Box
 from fabric.widgets.eventbox import EventBox  # <-- use our EventBox
 from fabric.widgets.button import Button
@@ -59,8 +60,8 @@ class Battery(Box):
             value=0,
             size=28,
             line_width=2,
-            start_angle=150,
-            end_angle=390,
+            start_angle=90+30,
+            end_angle=90-30+360,
         )
 
         self.bat_overlay = Overlay(
@@ -84,7 +85,7 @@ class Battery(Box):
         )
 
         # Create an inner container to hold the battery elements.
-        inner_container = Box(orientation="h", spacing=0)
+        inner_container = Box(orientation="h", spacing=3)
         inner_container.add(self.bat_overlay)
         inner_container.add(self.bat_revealer)
         inner_container.add(self.mode_switcher)
@@ -141,22 +142,18 @@ class Battery(Box):
 
     def poll_battery(self):
         """
-        Polls the battery status by running the "acpi -b" command.
+        Polls the battery status with psutil.
         If no battery information is found, returns (0, None).
         Otherwise, returns a tuple: (battery percentage as a float between 0 and 1, battery status string)
         """
-        try:
-            output = subprocess.check_output(["acpi", "-b"]).decode("utf-8").strip()
-            if "Battery" not in output:
-                return (0, None)
-            match_percent = re.search(r'(\d+)%', output)
-            match_status = re.search(r'Battery \d+: (\w+)', output)
-            if match_percent:
-                percent = int(match_percent.group(1))
-                status = match_status.group(1) if match_status else None
-                return (percent / 100.0, status)
-        except Exception:
-            pass
+        battery = psutil.sensors_battery()
+        if battery is not None:
+            percent = battery.percent / 100.0
+            charging = battery.power_plugged
+            if charging or charging is None:
+                return (percent, "Charging")
+            else:
+                return (percent, "Discharging")
         return (0, None)
 
     def update_battery(self, sender, battery_data):
@@ -178,6 +175,9 @@ class Battery(Box):
         # Actualizar el icono de la batería basado en el nivel y el estado de carga.
         if percentage <= 15:
             self.bat_icon.set_markup(icons.alert)
+            if status == "Charging":
+                self.bat_icon.set_markup(icons.charging)
+            
             self.bat_icon.add_style_class("alert")
             self.bat_circle.add_style_class("alert")
         else:

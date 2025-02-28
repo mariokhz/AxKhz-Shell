@@ -10,7 +10,7 @@ from fabric.widgets.circularprogressbar import CircularProgressBar
 from services.brightness import Brightness
 import modules.icons as icons
 
-from gi.repository import GLib
+from gi.repository import GLib, Gdk
 
 def supports_backlight():
     try:
@@ -299,7 +299,7 @@ class BrightnessSmall(Box):
         self.brightness_label = Label(name="brightness-label", markup=icons.brightness_high)
         self.brightness_button = Button(child=self.brightness_label)
         self.event_box = EventBox(
-            events="scroll",
+            events="smooth-scroll",
             child=Overlay(
                 child=self.progress_bar,
                 overlays=self.brightness_button
@@ -313,6 +313,13 @@ class BrightnessSmall(Box):
     def on_scroll(self, _, event):
         if self.brightness.max_screen == -1:
             return
+        
+        if event.direction == Gdk.ScrollDirection.SMOOTH:
+            if abs(event.delta_y) > 0:
+                self.brightness.screen_brightness += 1.5*event.delta_y
+            if abs(event.delta_x) > 0:
+                self.brightness.screen_brightness -= 1.5*event.delta_x
+
         match event.direction:
             case 0:
                 self.brightness.screen_brightness += 10  # Increment brightness

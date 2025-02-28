@@ -113,7 +113,7 @@ class Calendar(Gtk.Box):
 
     def create_month_view(self, year, month):
         grid = Gtk.Grid(column_homogeneous=True, row_homogeneous=False, name="calendar-grid")
-        cal = calendar.Calendar(firstweekday=6)
+        cal = calendar.Calendar(firstweekday=0)
         month_days = cal.monthdayscalendar(year, month)
         # Ensure 6 rows for consistency.
         while len(month_days) < 6:
@@ -152,7 +152,7 @@ class Calendar(Gtk.Box):
 
     def get_weekday_initials(self):
         # Returns localized weekday initials.
-        return [datetime(2023, 1, i + 1).strftime("%a")[:1] for i in range(7)]
+        return [datetime(2024, 1, i + 1).strftime("%a")[:1] for i in range(7)]
 
     def on_prev_month_clicked(self, widget):
         if self.current_month == 1:

@@ -52,6 +52,16 @@ charging: str = "&#xefef;"
 discharging: str = "&#xefe9;"
 alert: str = "&#xefb4;"
 
+# Sensors
+battery_25: str = "&#xea2f;"
+battery_50: str = "&#xea30;"
+battery_75: str = "&#xea31;"
+battery_100: str = "&#xea32;"
+battery_charging: str = "&#xea33;"
+
+update: str = "&#xfa0a;"
+updated: str = "&#xf704;"
+
 # Applets
 wifi_0: str = "&#xeba3;"
 wifi_1: str = "&#xeba4;"
@@ -69,6 +79,13 @@ bluetooth_off: str = "&#xeceb;"
 night_off: str = "&#xf162;"
 dnd_off: str = "&#xece9;"
 
+# Network
+network_off: str = "&#xf414;"
+wifi_0: str = "&#xeba3;"
+wifi_1: str = "&#xeba4;"
+wifi_2: str = "&#xeba5;"
+download: str = "&#xea96;"
+upload: str = "&#xeb47;"
 # Bluetooth
 bluetooth_connected: str = "&#xecea;"
 bluetooth_disconnected: str = "&#xf081;"
@@ -94,7 +111,9 @@ vol_medium: str = "&#xeb4f;"
 vol_high: str = "&#xeb51;"
 
 mic: str = "&#xeaf0;"
+mic_off: str = "&#xed16;"
 mic_mute: str = "&#xed16;"
+
 
 # Overview
 circle_plus: str = "&#xea69;"
@@ -112,9 +131,40 @@ trash: str = "&#xeb41;"
 config: str = "&#xeb20;"
 
 # Icons
+desktop: str = "&#xea89;"
 firefox: str = "&#xecfd;"
 chromium: str = "&#xec18;"
 spotify: str = "&#xfe86;"
+code: str = "&#xf3a0;"
+discord: str = "&#xece3;"
+obsidian: str = "&#xeff5;"
+anytype: str = "&#xf495;"
+safari: str = "&#xec23;"
+obs: str = "&#xef70;"
+ghost: str = "&#xfc13;"
+appstore: str = "&#xebb6;"
+bottle: str = "&#xfa89;"
+theme: str = "&#xeb00;"
+brand_office: str = "&#xf398;"
+
+tex: str = "&#xf4e0;"
+pdf_file: str = "&#xfb10;"
+
+eyeglasses: str = "&#xee8a;"
+writing: str = "&#xef08;"
+brush: str = "&#xebb8;"
+
+apple: str = "&#xec17;"
+mobile: str = "&#xea8a;"
+parsec: str = "&#xeef6;"
+
+finder: str = "&#xf218;"
+folder: str = "&#xeaad;"
+zip: str = "&#xed4e;"
+
+terminal: str = "&#xebef;"
+
+
 disc: str = "&#x1003e;"
 disc_off: str = "&#xf118;"
 
@@ -136,3 +186,57 @@ def apply_span() -> None:
             global_dict[key] = f"{span}{global_dict[key]}</span>"
 
 apply_span()
+
+def get_class_icon(win_class):
+    icon = ghost
+    if win_class == "unknown":
+        icon = desktop
+    if win_class == "firefox":
+        icon = firefox
+    elif win_class == "org.kde.dolphin":
+        icon = finder
+    elif win_class == "chromium":
+        icon = chromium
+    elif win_class == "Spotify":
+        icon = spotify
+    elif win_class == "code":
+        icon = code
+    elif win_class == "com.discordapp.Discord":
+        icon = discord
+    elif win_class == "kitty":
+        icon = terminal
+    elif win_class == "obsidian":
+        icon = obsidian
+    elif win_class == "anytype":
+        icon = anytype
+    elif win_class == "zen":
+        icon = safari
+    elif win_class == "com.obsproject.Studio":
+        icon = obs
+    elif win_class == "GStreamer" or win_class == "org.kde.kdeconnect.app" or win_class == "org.kde.kdeconnect-settings":
+        icon = mobile
+    elif win_class == "org.kde.discover":
+        icon = appstore
+    elif win_class == "org.pulseaudio.pavucontrol":
+        icon = vol_high
+    elif win_class == "com.github.flxzt.rnote" or win_class == "com.github.xournalpp.xournalpp":
+        icon = writing
+    elif win_class == "krita":
+        icon = brush
+    elif win_class == "org.kde.ark":
+        icon = zip
+    elif win_class == "com.usebottles.bottles":
+        icon = bottle
+    elif win_class == "nwg-look":
+        icon = theme
+    elif win_class == "org.cvfosammmm.Setzer":
+        icon = tex
+    elif win_class == "org.pwmt.zathura":
+        icon = pdf_file
+    elif win_class == "org.kde.okular":
+        icon = eyeglasses
+    elif win_class == "ONLYOFFICE":
+        icon = brand_office
+    elif win_class == "parsecd":
+        icon = parsec
+    return icon

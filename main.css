@@ -16,12 +16,13 @@
 @import url("./styles/power.css");
 @import url("./styles/battery.css");
 @import url("./styles/volume.css");
+@import url("./styles/sensors.css");
 
 * {
   all: unset;
   color: var(--foreground);
-  font-size: 11pt;
-  font-family: "Zed Sans";
+  font-size: 10pt;
+  font-family: "Cantarell Bold";
   border-radius: 16px;
 }
 
@@ -33,7 +34,7 @@
 
 #bar-inner.hidden {
   margin: 8px;
-  margin-top: -40px;
+  margin-top: -41px;
   opacity: 0;
 }
 
@@ -63,7 +64,7 @@
 }
 
 #workspaces > button.urgent {
-  background-color: var(--error_dim);
+  background-color: var(--error-dim);
 }
 
 #workspaces > button.active {
@@ -118,6 +119,7 @@ menu > menuitem:hover > label {
 
 tooltip {
   border: solid 1px;
+  font-weight: bold;
   border-color: var(--surface);
   background-color: var(--shadow);
   animation: tooltipShow 0.25s cubic-bezier(0.5, 0.25, 0, 1);
@@ -152,6 +154,22 @@ tooltip > * {
   font-size: 20px;
   padding: 4px;
   border-radius: 12px;
+  transition: all 0.1s ease;
+}
+
+#button-icon-label {
+  color: var(--primary);
+  font-size: 20px;
+  padding: 4px;
+  border-radius: 11px;
+  transition: all 0.1s ease;
+}
+
+#icon-label {
+  color: var(--foreground);
+  font-size: 20px;
+  padding: 4px;
+  border-radius: 11px;
   transition: all 0.1s ease;
 }
 
