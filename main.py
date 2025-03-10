@@ -4,7 +4,7 @@ from fabric import Application
 from fabric.utils import get_relative_path, exec_shell_command_async
 from modules.bar import Bar
 from modules.notch import Notch
-from modules.dock import Dock
+#from modules.dock import Dock
 from modules.corners import Corners
 import config.data as data
 from datetime import datetime
@@ -19,10 +19,10 @@ if __name__ == "__main__":
     corners = Corners()
     bar = Bar()
     notch = Notch()
-    dock = Dock() 
+    #dock = Dock() 
     bar.notch = notch
     notch.bar = bar
-    app = Application(f"{data.APP_NAME}", bar, notch, dock)
+    app = Application(f"{data.APP_NAME}", bar, notch)
 
     def set_css():
         app.set_stylesheet_from_file(
