@@ -175,11 +175,7 @@ class MetricsSmall(Overlay):
             start_angle=90+30,
             end_angle=90-30+360,
             style_classes="cpu",
-        )
-        self.cpu_overlay = Overlay(
-            name="metrics-cpu-overlay",
-            child=self.cpu_circle,
-            overlays=[self.cpu_icon],
+            child=self.cpu_icon,
         )
         self.cpu_level = Label(name="metrics-level", style_classes="cpu", label="0%")
         self.cpu_revealer = Revealer(
@@ -193,7 +189,7 @@ class MetricsSmall(Overlay):
             name="metrics-cpu-box",
             orientation="h",
             spacing=0,
-            children=[self.cpu_overlay, self.cpu_revealer],
+            children=[self.cpu_circle, self.cpu_revealer],
         )
 
         # ------------------ RAM ------------------
@@ -206,11 +202,7 @@ class MetricsSmall(Overlay):
             start_angle=90+30,
             end_angle=90-30+360,
             style_classes="ram",
-        )
-        self.ram_overlay = Overlay(
-            name="metrics-ram-overlay",
-            child=self.ram_circle,
-            overlays=[self.ram_icon],
+            child=self.ram_icon,
         )
         self.ram_level = Label(name="metrics-level", style_classes="ram", label="0%")
         self.ram_revealer = Revealer(
@@ -224,7 +216,7 @@ class MetricsSmall(Overlay):
             name="metrics-ram-box",
             orientation="h",
             spacing=0,
-            children=[self.ram_overlay, self.ram_revealer],
+            children=[self.ram_circle, self.ram_revealer],
         )
 
         # ------------------ Disk ------------------
@@ -237,11 +229,7 @@ class MetricsSmall(Overlay):
             start_angle=90+30,
             end_angle=90-30+360,
             style_classes="disk",
-        )
-        self.disk_overlay = Overlay(
-            name="metrics-disk-overlay",
-            child=self.disk_circle,
-            overlays=[self.disk_icon],
+            child=self.disk_icon,
         )
         self.disk_level = Label(name="metrics-level", style_classes="disk", label="0%")
         self.disk_revealer = Revealer(
@@ -255,7 +243,7 @@ class MetricsSmall(Overlay):
             name="metrics-disk-box",
             orientation="h",
             spacing=0,
-            children=[self.disk_overlay, self.disk_revealer],
+            children=[self.disk_circle, self.disk_revealer],
         )
 
         # Agregamos cada widget métrico al contenedor principal
@@ -354,11 +342,6 @@ class Battery(Overlay):
             end_angle=90-30+360,
             style_classes="bat",
         )
-        self.bat_overlay = Overlay(
-            name="metrics-bat-overlay",
-            child=self.bat_circle,
-            overlays=[self.bat_icon],
-        )
         self.bat_level = Label(name="metrics-level", style_classes="bat", label="100%")
         self.bat_revealer = Revealer(
             name="metrics-bat-revealer",
@@ -371,7 +354,7 @@ class Battery(Overlay):
             name="metrics-bat-box",
             orientation="h",
             spacing=0,
-            children=[self.bat_overlay, self.bat_revealer],
+            children=[self.bat_circle, self.bat_revealer],
         )
 
         # Agregamos cada widget métrico al contenedor principal

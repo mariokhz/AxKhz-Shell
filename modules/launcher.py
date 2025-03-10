@@ -8,9 +8,10 @@ from fabric.widgets.image import Image
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.utils import DesktopApp, get_desktop_applications, idle_add, remove_handler, exec_shell_command_async
 from fabric.widgets.image import Image
+from fabric.utils.helpers import get_relative_path
 from gi.repository import GLib, Gdk
 import modules.icons as icons
-import modules.data as data
+import config.data as data
 import json
 import os
 import re
@@ -34,7 +35,7 @@ class AppLauncher(Box):
         self._all_apps = get_desktop_applications()
 
         # Calculator history initialization
-        self.calc_history_path = os.path.expanduser("~/.cache/ax-shell/calc.json")
+        self.calc_history_path = f"{data.CACHE_DIR}/calc.json"
         if os.path.exists(self.calc_history_path):
             with open(self.calc_history_path, "r") as f:
                 self.calc_history = json.load(f)
@@ -70,7 +71,7 @@ class AppLauncher(Box):
                 Button(
                     name="config-button",
                     child=Label(name="config-label", markup=icons.config),
-                    on_clicked=lambda *_: (exec_shell_command_async(f"python {data.HOME_DIR}/.config/Ax-Shell/config/config.py"), self.close_launcher()),
+                    on_clicked=lambda *_: (exec_shell_command_async(f"python {get_relative_path('../config/config.py')}"), self.close_launcher()),
                 ),
                 self.search_entry,
                 Button(

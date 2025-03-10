@@ -10,7 +10,7 @@ from fabric.utils.helpers import get_relative_path, exec_shell_command_async
 from gi.repository import Gdk
 from modules.systemtray import SystemTray
 import modules.icons as icons
-import modules.data as data
+import config.data as data
 from modules.metrics import MetricsSmall, Battery, NetworkApplet
 from modules.controls import ControlSmall
 

@@ -46,12 +46,15 @@
   background-color: var(--shadow);
 }
 
-#button-volume, #button-mic, #button-brightness {
+#button-volume,
+#button-mic,
+#button-brightness {
   color: var(--surface-bright);
   border: 3px solid var(--primary);
 }
 
-#button-volume.muted, #button-mic.muted {
+#button-volume.muted,
+#button-mic.muted {
   color: var(--surface-bright);
   border: 3px solid var(--outline);
 }

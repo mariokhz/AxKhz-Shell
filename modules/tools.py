@@ -4,7 +4,7 @@ from fabric.widgets.button import Button
 from fabric.utils.helpers import exec_shell_command_async, get_relative_path
 import modules.icons as icons
 from gi.repository import Gdk, GLib
-import modules.data as data
+import config.data as data
 import subprocess
 
 SCREENSHOT_SCRIPT = get_relative_path("../scripts/screenshot.sh")

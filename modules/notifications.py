@@ -19,8 +19,10 @@ from fabric.widgets.label import Label
 from fabric.widgets.scrolledwindow import ScrolledWindow
 import modules.icons as icons
 
+import config.data as data
+
 # Persistence directory and file (history)
-PERSISTENT_DIR = "/tmp/ax-shell/notifications"
+PERSISTENT_DIR = f"/tmp/{data.APP_NAME}/notifications"
 PERSISTENT_HISTORY_FILE = os.path.join(PERSISTENT_DIR, "notification_history.json")
 
 def cache_notification_pixbuf(notification_box):

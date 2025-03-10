@@ -18,7 +18,7 @@ from modules.overview import Overview
 from modules.emoji import EmojiPicker
 from modules.corners import MyCorner
 import modules.icons as icons
-import modules.data as data
+import config.data as data
 from modules.player import PlayerSmall
 from modules.tools import Toolbox
 
