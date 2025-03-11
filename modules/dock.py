@@ -181,14 +181,19 @@ class Dock(Window):
         pinned_buttons = [
             self.create_button(app, running.get(app.lower(), [])) for app in self.pinned
         ]
+        open_classes = {}
+        for group in running.values():
+            for c in group:
+                key = c["initialClass"].lower()
+                if key not in [p.lower() for p in self.pinned] and key not in open_classes:
+                    open_classes[key] = c
         open_buttons = [
             self.create_button(
                 c["initialClass"], running.get(c["initialClass"].lower(), [])
             )
-            for group in running.values()
-            for c in group
-            if c["initialClass"].lower() not in [p.lower() for p in self.pinned]
+            for c in open_classes.values()
         ]
+        
         children = pinned_buttons
         if pinned_buttons and open_buttons:
             children += [Box(orientation="v", v_expand=True, name="dock-separator")]
