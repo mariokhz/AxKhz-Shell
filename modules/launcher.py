@@ -251,6 +251,9 @@ class AppLauncher(Box):
                         children[selected_index].clicked()
 
     def on_search_entry_key_press(self, widget, event):
+        if event.keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter) and (event.state & Gdk.ModifierType.SHIFT_MASK):
+            self.add_selected_app_to_dock()
+            return True
         text = widget.get_text()
         if text.startswith("="):
             if event.keyval == Gdk.KEY_Down:
@@ -295,6 +298,34 @@ class AppLauncher(Box):
                 self.close_launcher()
                 return True
             return False
+    
+    def add_selected_app_to_dock(self):
+        """Adds the currently selected application to the dock.json file."""
+        children = self.viewport.get_children()
+        if not children or self.selected_index == -1 or self.selected_index >= len(children):
+            return  # No app selected
+
+        selected_button = children[self.selected_index]
+        # Assuming the app's name/command is stored in the tooltip_text of the button.
+        # We need to extract the app's command from the DesktopApp object.
+        selected_app = next((app for app in self._all_apps if app.display_name == selected_button.get_child().get_children()[1].props.label), None)
+        if not selected_app:
+            return
+
+        app_command = selected_app.executable
+
+        config_path = get_relative_path("../config/dock.json")
+        try:
+            with open(config_path, "r+") as file:
+                data = json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            data = {}  # Initialize as an empty dictionary if file not found or corrupted
+            with open(config_path, "w") as file: #create the file
+                pass
+        if app_command not in data.get("pinned_apps", []):
+            data.setdefault("pinned_apps", []).append(app_command)
+            with open(config_path, "w") as file:
+                json.dump(data, file, indent=4)
 
     def move_selection(self, delta: int):
         children = self.viewport.get_children()

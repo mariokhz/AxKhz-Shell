@@ -1,12 +1,10 @@
 #!/bin/bash
-set -euo pipefail
 
-if [ "$(id -u)" -eq 0 ]; then
-  echo "Please, don't run as root."
-  exit 1
-fi
+set -e  # Exit immediately if a command fails
+set -u  # Treat unset variables as errors
+set -o pipefail  # Prevent errors in a pipeline from being masked
 
-REPO_URL="https://github.com/Axenide/Ax-Shell"
+REPO_URL="https://github.com/Axenide/Ax-Shell.git"
 INSTALL_DIR="$HOME/.config/Ax-Shell"
 PACKAGES=(
   acpi
@@ -42,27 +40,42 @@ PACKAGES=(
   wlinhibit
 )
 
-if command -v yay >/dev/null; then
-  aur_helper="yay"
-elif command -v paru >/dev/null; then
-  aur_helper="paru"
-else
-  echo "Instalando yay-bin..."
-  tmpdir=$(mktemp -d)
-  git clone https://aur.archlinux.org/yay-bin.git "$tmpdir/yay-bin"
-  (cd "$tmpdir/yay-bin" && makepkg -si --noconfirm)
-  rm -rf "$tmpdir"
-  aur_helper="yay"
+# Prevent running as root
+if [ "$(id -u)" -eq 0 ]; then
+    echo "Please do not run this script as root."
+    exit 1
 fi
 
+aur_helper="yay"
+
+# Check if paru exists, otherwise use yay
+if command -v paru &>/dev/null; then
+    aur_helper="paru"
+elif ! command -v yay &>/dev/null; then
+    echo "Installing yay-bin..."
+    tmpdir=$(mktemp -d)
+    git clone --depth=1 https://aur.archlinux.org/yay-bin.git "$tmpdir/yay-bin"
+    (cd "$tmpdir/yay-bin" && makepkg -si --noconfirm)
+    rm -rf "$tmpdir"
+fi
+
+# Clone or update the repository
 if [ -d "$INSTALL_DIR" ]; then
-  git -C "$INSTALL_DIR" pull
+    echo "Updating Ax-Shell..."
+    git -C "$INSTALL_DIR" pull
 else
-  git clone "$REPO_URL" "$INSTALL_DIR"
+    echo "Cloning Ax-Shell..."
+    git clone --depth=1 "$REPO_URL" "$INSTALL_DIR"
 fi
 
-yes | "$aur_helper" -Syy --devel --needed --noconfirm gray-git
-"$aur_helper" -Syy --devel --needed --noconfirm "${PACKAGES[@]}"
+# Install required packages using the detected AUR helper (only if missing)
+echo "Installing required packages..."
+$aur_helper -Syy --needed --noconfirm "${PACKAGES[@]}" || true
+
+echo "Installing gray-git..."
+yes | $aur_helper -Syy --needed --noconfirm gray-git || true
+
+echo "Installing required fonts..."
 
 FONT_URL="https://github.com/zed-industries/zed-fonts/releases/download/1.2.0/zed-sans-1.2.0.zip"
 FONT_DIR="$HOME/.fonts/zed-sans"
@@ -92,7 +105,9 @@ else
     echo "Local fonts are already installed. Skipping copy."
 fi
 
+python "$INSTALL_DIR/config/config.py"
+echo "Starting Ax-Shell..."
 killall ax-shell 2>/dev/null || true
 uwsm app -- python "$INSTALL_DIR/main.py" > /dev/null 2>&1 & disown
 
-echo "Instalación completa."
+echo "Installation complete."

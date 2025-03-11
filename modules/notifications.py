@@ -337,7 +337,7 @@ class NotificationBox(Box):
         if self._container:
             self._container.resume_all_timeouts()
 
-class HistoricalNotification:
+class HistoricalNotification(object):
     def __init__(self, id, app_icon, summary, body, app_name, timestamp, cached_image_path=None):
         self.id = id
         self.app_icon = app_icon
@@ -428,6 +428,9 @@ class NotificationHistory(Box):
         self._load_persistent_history()
         self._cleanup_orphan_cached_images()
         self.schedule_midnight_update()
+
+        # List of apps for which notifications should be limited to one in history too
+        self.LIMITED_APPS_HISTORY = ["Spotify"] # Add your list of apps here, same as NotificationContainer if needed
 
     def get_ordinal(self, n):
         if 11 <= (n % 100) <= 13:
@@ -689,6 +692,10 @@ class NotificationHistory(Box):
         self.update_no_notifications_label_visibility()
 
     def add_notification(self, notification_box):
+        app_name = notification_box.notification.app_name
+        if app_name in self.LIMITED_APPS_HISTORY:
+            self.clear_history_for_app(app_name) # Immediately clear history for this app
+
         if len(self.containers) >= 50:
             oldest_container = self.containers.pop()
             if hasattr(oldest_container, "notification_box") and hasattr(oldest_container.notification_box, "cached_image_path") and oldest_container.notification_box.cached_image_path and os.path.exists(oldest_container.notification_box.cached_image_path):
@@ -859,7 +866,111 @@ class NotificationHistory(Box):
         self.no_notifications_box.set_visible(not has_notifications)
         self.notifications_list.set_visible(has_notifications)
 
+    def clear_history_for_app(self, app_name):
+        """Clears all notifications in history for a specific app."""
+        containers_to_remove = []
+        persistent_notes_to_remove_ids = set()
+        for container in list(self.containers): # Iterate over a copy
+            if hasattr(container, "notification_box") and container.notification_box.notification.app_name == app_name:
+                containers_to_remove.append(container)
+                persistent_notes_to_remove_ids.add(container.notification_box.uuid)
+
+        for container in containers_to_remove:
+            if hasattr(container, "notification_box") and hasattr(container.notification_box, "cached_image_path") and container.notification_box.cached_image_path and os.path.exists(container.notification_box.cached_image_path):
+                try:
+                    os.remove(container.notification_box.cached_image_path)
+                    logger.info(f"Deleted cached image of replaced history notification: {container.notification_box.cached_image_path}")
+                except Exception as e:
+                    logger.error(f"Error deleting cached image of replaced history notification: {e}")
+            self.containers.remove(container)
+            self.notifications_list.remove(container)
+            container.notification_box.destroy(from_history_delete=True)
+            container.destroy()
+
+        # Update persistent history
+        self.persistent_notifications = [
+            note for note in self.persistent_notifications
+            if note.get("id") not in persistent_notes_to_remove_ids
+        ]
+        self._save_persistent_history()
+        self.rebuild_with_separators()
+        self.update_no_notifications_label_visibility()
+
 class NotificationContainer(Box):
+    LIMITED_APPS = ["Spotify"] # Add your list of apps here
+
+    def on_new_notification(self, fabric_notif, id):
+        if self.notch.notification_history.do_not_disturb_enabled:
+            logger.info("Do Not Disturb mode enabled: adding notification directly to history.")
+            notification = fabric_notif.get_notification_from_id(id)
+            new_box = NotificationBox(notification)
+            if notification.image_pixbuf:
+                cache_notification_pixbuf(new_box)
+            self.notch.notification_history.add_notification(new_box)
+            return
+
+        notification = fabric_notif.get_notification_from_id(id)
+        new_box = NotificationBox(notification)
+        new_box.set_container(self)
+        notification.connect("closed", self.on_notification_closed)
+
+        app_name = notification.app_name
+        if app_name in self.LIMITED_APPS:
+            self.notch.notification_history.clear_history_for_app(app_name) # Clear history immediately
+
+            existing_notification_index = -1
+            for index, existing_box in enumerate(self.notifications):
+                if existing_box.notification.app_name == app_name:
+                    existing_notification_index = index
+                    break
+
+            if existing_notification_index != -1:
+                # Replace existing notification in live stack
+                old_notification_box = self.notifications.pop(existing_notification_index)
+                self.stack.remove(old_notification_box)
+                old_notification_box.destroy() # Clean up resources
+
+                # Add the new notification at the end of live stack
+                self.stack.add_named(new_box, str(id))
+                self.notifications.append(new_box)
+                self.current_index = len(self.notifications) - 1 # Update current index
+                self.stack.set_visible_child(new_box)
+            else:
+                # Add new notification normally if no existing notification from the same app in live stack
+                while len(self.notifications) >= 5:
+                    oldest_notification = self.notifications[0]
+                    self.notch.notification_history.add_notification(oldest_notification)
+                    self.stack.remove(oldest_notification)
+                    self.notifications.pop(0)
+                    if self.current_index > 0:
+                        self.current_index -= 1
+                self.stack.add_named(new_box, str(id))
+                self.notifications.append(new_box)
+                self.current_index = len(self.notifications) - 1
+                self.stack.set_visible_child(new_box)
+        else:
+            # Add new notification normally for non-limited apps
+            while len(self.notifications) >= 5:
+                oldest_notification = self.notifications[0]
+                self.notch.notification_history.add_notification(oldest_notification)
+                self.stack.remove(oldest_notification)
+                self.notifications.pop(0)
+                if self.current_index > 0:
+                    self.current_index -= 1
+            self.stack.add_named(new_box, str(id))
+            self.notifications.append(new_box)
+            self.current_index = len(self.notifications) - 1
+            self.stack.set_visible_child(new_box)
+
+        for notification_box in self.notifications:
+            notification_box.start_timeout()
+        if len(self.notifications) == 1:
+            if not self.notification_box_container.get_parent():
+                self.notch.notification_revealer.add(self.notification_box_container)
+        self.notch.notification_revealer.show_all()
+        self.notch.notification_revealer.set_reveal_child(True)
+        self.update_navigation_buttons()
+
     def __init__(self, **kwargs):
         super().__init__(name="notification", orientation="v", spacing=4)
         self.notch = kwargs["notch"]
@@ -936,39 +1047,6 @@ class NotificationContainer(Box):
         self.next_button.set_sensitive(self.current_index < len(self.notifications) - 1)
         self.navigation.set_visible(len(self.notifications) > 1)
 
-    def on_new_notification(self, fabric_notif, id):
-        if self.notch.notification_history.do_not_disturb_enabled:
-            logger.info("Do Not Disturb mode enabled: adding notification directly to history.")
-            notification = fabric_notif.get_notification_from_id(id)
-            new_box = NotificationBox(notification)
-            if notification.image_pixbuf:
-                cache_notification_pixbuf(new_box)
-            self.notch.notification_history.add_notification(new_box)
-            return
-
-        notification = fabric_notif.get_notification_from_id(id)
-        new_box = NotificationBox(notification)
-        new_box.set_container(self)
-        notification.connect("closed", self.on_notification_closed)
-        while len(self.notifications) >= 5:
-            oldest_notification = self.notifications[0]
-            self.notch.notification_history.add_notification(oldest_notification)
-            self.stack.remove(oldest_notification)
-            self.notifications.pop(0)
-            if self.current_index > 0:
-                self.current_index -= 1
-        self.stack.add_named(new_box, str(id))
-        self.notifications.append(new_box)
-        self.current_index = len(self.notifications) - 1
-        self.stack.set_visible_child(new_box)
-        for notification_box in self.notifications:
-            notification_box.start_timeout()
-        if len(self.notifications) == 1:
-            if not self.notification_box_container.get_parent():
-                self.notch.notification_revealer.add(self.notification_box_container)
-        self.notch.notification_revealer.show_all()
-        self.notch.notification_revealer.set_reveal_child(True)
-        self.update_navigation_buttons()
 
     def on_notification_closed(self, notification, reason):
         if self._is_destroying:

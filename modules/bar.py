@@ -6,7 +6,7 @@ from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
 from fabric.widgets.wayland import WaylandWindow as Window
 from fabric.hyprland.widgets import Workspaces, WorkspaceButton
-from fabric.utils.helpers import get_relative_path, exec_shell_command_async
+from fabric.utils.helpers import exec_shell_command_async
 from gi.repository import Gdk
 from modules.systemtray import SystemTray
 import modules.icons as icons
@@ -19,7 +19,6 @@ from modules.battery import Battery
 
 from modules.updates import UpdatesWidget
 from modules.weather import Weather
-from modules.tools import Toolbox
 
 class Bar(Window):
     def __init__(self, **kwargs):
@@ -196,7 +195,7 @@ class Bar(Window):
 
         self.hidden = False
 
-        self.show_all()
+        # self.show_all()
         self.systray._update_visibility()
 
     def on_button_enter(self, widget, event):

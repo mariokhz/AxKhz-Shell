@@ -7,7 +7,6 @@ from modules.notch import Notch
 from modules.dock import Dock
 from modules.corners import Corners
 import config.data as data
-from datetime import datetime
 
 fonts_updated_file = f"{data.CACHE_DIR}/fonts_updated"
 
@@ -29,7 +28,7 @@ if __name__ == "__main__":
             get_relative_path("main.css"),
             exposed_functions={
                 "overview_width": lambda: f"min-width: {data.CURRENT_WIDTH * 0.1 * 5 + 92}px;",
-                "overview_height": lambda: f"min-height: {data.CURRENT_HEIGHT * 0.1 * 2 + 32}px;",
+                "overview_height": lambda: f"min-height: {data.CURRENT_HEIGHT * 0.1 * 2 + 32 + 56}px;",
             },
         )
 

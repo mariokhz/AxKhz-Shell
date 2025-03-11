@@ -1,5 +1,5 @@
 import json
-from gi.repository import GLib, Gtk, Gdk
+from gi.repository import GLib, Gtk, Gdk, Gio
 from utils.icon_resolver import IconResolver
 from utils.occlusion import check_occlusion
 from fabric.widgets.box import Box
@@ -9,14 +9,18 @@ from fabric.widgets.eventbox import EventBox
 from fabric.widgets.wayland import WaylandWindow as Window
 from fabric.hyprland.widgets import get_hyprland_connection
 from fabric.utils import exec_shell_command, exec_shell_command_async, idle_add, remove_handler, get_relative_path
+from fabric.utils.helpers import get_desktop_applications
 
 import config.data as data
 
 def read_config():
-    """Read and return the full configuration from the JSON file."""
+    """Read and return the full configuration from the JSON file, handling missing file."""
     config_path = get_relative_path("../config/dock.json")
-    with open(config_path, "r") as file:
-        data = json.load(file)
+    try:
+        with open(config_path, "r") as file:
+            data = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        data = {"pinned_apps": []}  # Default to empty pinned apps
     return data
 
 class Dock(Window):
@@ -33,9 +37,12 @@ class Dock(Window):
         self.conn = get_hyprland_connection()
         self.icon = IconResolver()
         self.pinned = self.config.get("pinned_apps", [])
+        self.config_path = get_relative_path("../config/dock.json")
+        self.app_map = {}  # Initialize the app map
         self.is_hidden = False
         self.hide_id = None
         self._arranger_handler = None
+        self._drag_in_progress = False  # Drag lock flag
         self.is_hovered = False
 
         # Set up UI containers
@@ -57,7 +64,7 @@ class Dock(Window):
         self.main_box = Box(orientation="v", children=[self.dock_eventbox, self.hover_activator])
         self.add(self.main_box)
 
-        # Drag-and-drop setup
+        # Drag-and-drop setup for the viewport
         self.view.drag_source_set(
             Gdk.ModifierType.BUTTON1_MASK,
             [Gtk.TargetEntry.new("text/plain", Gtk.TargetFlags.SAME_APP, 0)],
@@ -70,6 +77,8 @@ class Dock(Window):
         )
         self.view.connect("drag-data-get", self.on_drag_data_get)
         self.view.connect("drag-data-received", self.on_drag_data_received)
+        self.view.connect("drag-begin", self.on_drag_begin)
+        self.view.connect("drag-end", self.on_drag_end)
 
         # Initialization
         if self.conn.ready:
@@ -84,6 +93,12 @@ class Dock(Window):
         self.conn.connect("event::workspace", self.check_hide)
         
         GLib.timeout_add(250, self.check_occlusion_state)
+        # Monitor dock.json for changes
+        GLib.timeout_add_seconds(1, self.check_config_change)
+
+    def on_drag_begin(self, widget, drag_context):
+        """Handle drag begin event by setting the drag lock flag."""
+        self._drag_in_progress = True
 
     def _on_hover_enter(self, *args):
         """Handle hover over bottom activation area"""
@@ -114,7 +129,8 @@ class Dock(Window):
         self.delay_hide()
         # Immediate occlusion check on true leave
         occlusion_region = (0, data.CURRENT_HEIGHT - 70, data.CURRENT_WIDTH, 70)
-        if check_occlusion(occlusion_region):
+        # Only add occlusion style if not dragging an icon.
+        if not self._drag_in_progress and (check_occlusion(occlusion_region) or not self.view.get_children()):
             self.wrapper.add_style_class("occluded")
         return True
 
@@ -154,7 +170,7 @@ class Dock(Window):
         self.toggle_dock(show=False)
         self.hide_id = None
         return False
-
+    
     def check_hide(self, *args):
         """Determine if dock should auto-hide"""
         clients = self.get_clients()
@@ -169,7 +185,8 @@ class Dock(Window):
             self.toggle_dock(show=True)
 
     def update_dock(self, *args):
-        """Refresh dock contents"""
+        """Refresh dock contents and clear drag lock."""
+        self.update_app_map()  # Update app map before creating buttons
         arranger_handler = getattr(self, "_arranger_handler", None)
         if arranger_handler:
             remove_handler(arranger_handler)
@@ -200,6 +217,7 @@ class Dock(Window):
         children += open_buttons
         self.view.children = children
         idle_add(self._update_size)
+        self._drag_in_progress = False  # Clear the drag lock
 
     def _update_size(self):
         """Update window size based on content"""
@@ -207,11 +225,28 @@ class Dock(Window):
         self.set_size_request(width, -1)
         return False
 
+    def update_app_map(self):
+        """Updates the mapping of commands to DesktopApp objects."""
+        all_apps = get_desktop_applications()
+        self.app_map = {app.executable: app for app in all_apps}
+
     def create_button(self, app, instances):
         """Create dock application button"""
-        icon_img = self.icon.get_icon_pixbuf(
-            app.lower(), 36
-        ) or self.icon.get_icon_pixbuf("image-missing", 36)
+        desktop_app = self.app_map.get(app)
+        icon_img = None
+        if desktop_app:
+            icon_img = desktop_app.get_icon_pixbuf(size=36)
+        if not icon_img:
+            # Fallback to IconResolver with the app command
+            icon_img = self.icon.get_icon_pixbuf(app, 36)
+        if not icon_img:
+            # Fallback icon if no DesktopApp is found
+            icon_img = self.icon.get_icon_pixbuf(
+                "application-x-executable-symbolic", 36
+            )
+            # Final fallback
+            if not icon_img:
+                icon_img = self.icon.get_icon_pixbuf("image-missing", 36)
         items = [Image(pixbuf=icon_img)]
         
         button = Button(
@@ -222,20 +257,23 @@ class Dock(Window):
                 children=items,
             ),
             on_clicked=lambda *a: self.handle_app(app, instances),
-            tooltip_text=instances[0]["title"] if instances else app,
+            tooltip_text=app if app.lower() in [p.lower() for p in self.pinned] else (instances[0]["title"] if instances else app),
             name="dock-app-button",
         )
         
         if instances:
             button.add_style_class("instance")
 
-        # Enable DnD for pinned apps
-        if app.lower() in [p.lower() for p in self.pinned]:
-            button.drag_source_set(
-                Gdk.ModifierType.BUTTON1_MASK,
-                [Gtk.TargetEntry.new("text/plain", Gtk.TargetFlags.SAME_APP, 0)],
-                Gdk.DragAction.MOVE
-            )
+        button.instances = instances  # Use a normal Python attribute
+        # Enable DnD for ALL apps
+        button.drag_source_set(
+            Gdk.ModifierType.BUTTON1_MASK,
+            [Gtk.TargetEntry.new("text/plain", Gtk.TargetFlags.SAME_APP, 0)],
+            Gdk.DragAction.MOVE
+        )
+        button.connect("drag-begin", self.on_drag_begin)
+        button.connect("drag-end", self.on_drag_end)  # Connect drag-end to ALL buttons
+        if app.lower() in [p.lower() for p in self.pinned]:  # Only pinned apps can be reordered
             button.drag_dest_set(
                 Gtk.DestDefaults.ALL,
                 [Gtk.TargetEntry.new("text/plain", Gtk.TargetFlags.SAME_APP, 0)],
@@ -289,10 +327,12 @@ class Dock(Window):
 
     def check_occlusion_state(self):
         """Periodic occlusion check"""
-        if self.is_hovered:
-            return True  # Skip if hovered
+        # Skip occlusion check if hovered or dragging an icon
+        if self.is_hovered or self._drag_in_progress:
+            self.wrapper.remove_style_class("occluded")
+            return True
         occlusion_region = (0, data.CURRENT_HEIGHT - 80, data.CURRENT_WIDTH, 80)
-        if check_occlusion(occlusion_region):
+        if check_occlusion(occlusion_region) or not self.view.get_children():
             self.wrapper.add_style_class("occluded")
         else:
             self.wrapper.remove_style_class("occluded")
@@ -331,14 +371,69 @@ class Dock(Window):
         if source_index != target_index:
             child = children.pop(source_index)
             children.insert(target_index, child)
-            self.view.children = children
+            self.view.children = children  # Redundant, but good practice.
             self.update_pinned_apps()
 
-    def update_pinned_apps(self):
-        """Update pinned apps configuration"""
-        self.config["pinned_apps"] = [
-            child.get_tooltip_text() for child in self.view.get_children() if child.get_tooltip_text() in self.pinned
-        ]
+    def on_drag_end(self, widget, drag_context):
+        """Handles drag end, for unpinning and closing apps."""
+        # If a drag is already in progress, ignore duplicate calls.
+        if not self._drag_in_progress:
+            return
+
+        def process_drag_end():
+            """Inner function to handle drag end, safe to call with idle_add."""
+            if self.get_mapped():  # Check if the window is mapped
+                # Get window geometry *before* any modifications
+                display = Gdk.Display.get_default()
+                _, x, y, _ = display.get_pointer()  # Get pointer relative to the screen
+                window = self.get_window()
+                if window:  # Check if we got a window
+                    win_x, win_y, width, height = window.get_geometry()
+                    if not (win_x <= x <= win_x + width and win_y <= y <= win_y + height):
+                        # Drag ended outside the dock
+                        app_to_remove = widget.get_tooltip_text()
+                        instances = widget.instances  # Access the attribute directly
+                        if app_to_remove in self.config["pinned_apps"]:  # Remove pinned
+                            self.config["pinned_apps"].remove(app_to_remove)
+                            self.update_pinned_apps_file()  # Write to the file
+                        elif instances:
+                            # Close running app (if not pinned)
+                            # Assuming the first instance is the relevant one.
+                            address = instances[0].get("address")
+                            if address:
+                                exec_shell_command(f"hyprctl dispatch closewindow address:{address}")
+            self.update_dock()  # Always update the dock after drag end
+
+        GLib.idle_add(process_drag_end)  # Deferred execution with idle_add
+
+    def check_config_change(self):
+        """Check if the config file has been modified."""
+        new_config = read_config()
+        if new_config.get("pinned_apps", []) != self.config.get("pinned_apps", []):
+            self.config = new_config
+            self.pinned = self.config.get("pinned_apps", [])
+            self.update_app_map()  # Update app_map when config changes
+            self.update_dock()
+        return True  # Continue the timeout
+
+    def update_pinned_apps_file(self):
+        """Writes the updated pinned apps list to dock.json"""
         config_path = get_relative_path("../config/dock.json")
         with open(config_path, "w") as file:
             json.dump(self.config, file, indent=4)
+
+    def update_pinned_apps(self):
+        """Update pinned apps configuration by collecting all items before the separator"""
+        pinned_children = []
+        for child in self.view.get_children():
+            if child.get_name() == "dock-separator":
+                break  # Stop at separator
+            pinned_children.append(child.get_tooltip_text())
+        
+        # Directly update both config and local pinned list
+        self.config["pinned_apps"] = pinned_children
+        self.pinned = pinned_children  # Update local state immediately
+        
+        # Force UI update and write to file
+        self.update_dock()  # Refresh dock immediately
+        self.update_pinned_apps_file()  # Persist to disk
