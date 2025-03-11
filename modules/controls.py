@@ -163,7 +163,7 @@ class BrightnessSmall(Box):
 
         self.progress_bar = CircularProgressBar(
             name="button-brightness", size=28, line_width=2,
-            start_angle=150, end_angle=390,
+            start_angle=90+30, end_angle=90-30+360,
         )
         self.brightness_label = Label(name="brightness-label", markup=icons.brightness_high)
         self.brightness_button = Button(child=self.brightness_label)
