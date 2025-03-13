@@ -67,7 +67,7 @@ class Toolbox(Box):
 
         self.btn_color = Button(
             name="toolbox-button",
-            tooltip_text="Color Picker\nLeft Click: HEX\nMiddle Click: HSV\nRight Click: RGB\n\nKeyboard:\nReturn: HEX\nShift+Return: RGB\nCtrl+Return: HSV",
+            tooltip_text="Color Picker\nLeft Click: HEX\nMiddle Click: HSV\nRight Click: RGB\n\nKeyboard:\nEnter: HEX\nShift+Enter: RGB\nCtrl+Enter: HSV",
             child=Label(
                 name="button-bar-label",
                 markup=icons.colorpicker

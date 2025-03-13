@@ -24,7 +24,7 @@ menu > menuitem > label,
 
 #weather {
   background-color: var(--shadow);
-  padding: 8px;
+  padding: 0 8px;
   border-radius: 16px;
   margin-top: 4px;
 }

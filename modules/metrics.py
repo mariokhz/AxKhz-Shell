@@ -341,6 +341,7 @@ class Battery(Overlay):
             start_angle=90+30,
             end_angle=90-30+360,
             style_classes="bat",
+            child=self.bat_icon,
         )
         self.bat_level = Label(name="metrics-level", style_classes="bat", label="100%")
         self.bat_revealer = Revealer(

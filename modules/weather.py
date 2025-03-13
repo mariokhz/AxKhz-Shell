@@ -1,14 +1,12 @@
 import gi
-import requests
-import threading
 import urllib.parse
-from gi.repository import Gtk, GLib
+import requests
+from gi.repository import GLib
 
 from fabric.widgets.label import Label
 from fabric.widgets.box import Box
 
 gi.require_version("Gtk", "3.0")
-
 import modules.icons as icons
 
 class Weather(Box):
@@ -17,16 +15,16 @@ class Weather(Box):
         self.label = Label(name="weather-label", markup=icons.loader)
         self.add(self.label)
         self.show_all()
-        # Update every 10 mins
+        self.session = requests.Session()  # Reuse HTTP connection
+        # Update every 10 minutes
         GLib.timeout_add_seconds(600, self.fetch_weather)
         self.fetch_weather()
 
     def get_location(self):
         try:
-            response = requests.get("https://ipinfo.io/json")
-            if response.status_code == 200:
-                data = response.json()
-                return data.get("city", "")
+            response = self.session.get("https://ipinfo.io/json", timeout=5)
+            if response.ok:
+                return response.json().get("city", "")
             else:
                 print("Error getting location from ipinfo.")
         except Exception as e:
@@ -34,28 +32,30 @@ class Weather(Box):
         return ""
 
     def fetch_weather(self):
-        threading.Thread(target=self._fetch_weather_thread, daemon=True).start()
+        GLib.Thread.new("weather-fetch", self._fetch_weather_thread, None)
         return True
 
-    def _fetch_weather_thread(self):
+    def _fetch_weather_thread(self, data):
         location = self.get_location()
         if location == "Madrid":
             location = "Valencia"
         if location:
-            # URL encode the location to make it URL friendly.
-            encoded_location = urllib.parse.quote(location)
-            url = f"https://wttr.in/{encoded_location}?format=%c+%t"
+            url = f"https://wttr.in/{urllib.parse.quote(location)}?format=%c+%t"
         else:
             url = "https://wttr.in/?format=%c+%t"
         try:
-            response = requests.get(url)
-            if response.status_code == 200:
+            response = self.session.get(url, timeout=5)
+            if response.ok:
                 weather_data = response.text.strip()
-                GLib.idle_add(self.label.set_label, weather_data.replace(" ", ""))
+                if "Unknown" in weather_data:
+                    GLib.idle_add(self.set_visible, False)
+                else:
+                    GLib.idle_add(self.set_visible, True)
+                    GLib.idle_add(self.label.set_label, weather_data.replace(" ", ""))
             else:
                 GLib.idle_add(self.label.set_markup, f"{icons.cloud_off} Unavailable")
-                self.set_visible(False)
+                GLib.idle_add(self.set_visible, False)
         except Exception as e:
             print(f"Error fetching weather: {e}")
             GLib.idle_add(self.label.set_markup, f"{icons.cloud_off} Error")
-            self.set_visible(False)
+            GLib.idle_add(self.set_visible, False)
