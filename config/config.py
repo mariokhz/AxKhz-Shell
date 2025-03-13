@@ -229,7 +229,7 @@ decoration {{
 
 animations {{
     enabled = yes
-    bezier = myBezier, .5, .25, 0, 1
+    bezier = myBezier, 0.4, 0, 0.2, 1
     animation = windows, 1, 2.5, myBezier, popin 80%
     animation = border, 1, 2.5, myBezier
     animation = fade, 1, 2.5, myBezier
