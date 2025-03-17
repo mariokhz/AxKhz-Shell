@@ -289,15 +289,23 @@ class Notch(Window):
         if widget == "bluetooth":
             # If dashboard is already open
             if self.stack.get_visible_child() == self.dashboard:
-                # If visible applet is already btdevices then toggle close the dashboard.
-                if self.applet_stack.get_visible_child() == self.btdevices:
+                # If we're in the widgets section and btdevices is already visible, close the notch
+                if self.dashboard.stack.get_visible_child() == self.dashboard.widgets and self.applet_stack.get_visible_child() == self.btdevices:
                     self.close_notch()
-                else:
-                    self.applet_stack.set_transition_duration(250) # Set transition to 250 when already open
+                    return
+                # If we're in the widgets section but not on btdevices, switch to btdevices
+                elif self.dashboard.stack.get_visible_child() == self.dashboard.widgets:
+                    self.applet_stack.set_transition_duration(250)
                     self.applet_stack.set_visible_child(self.btdevices)
-                return
+                    return
+                # If we're in another dashboard section, switch to widgets and btdevices
+                else:
+                    self.dashboard.go_to_section("widgets")
+                    self.applet_stack.set_transition_duration(250)
+                    self.applet_stack.set_visible_child(self.btdevices)
+                    return
             else:
-                # Open dashboard with btdevices visible.
+                # Open dashboard with btdevices visible
                 self.set_keyboard_mode("exclusive")
 
                 if self.hidden:
@@ -310,13 +318,13 @@ class Notch(Window):
                     w.remove_style_class("open")
 
                 self.stack.add_style_class("dashboard")
-                self.applet_stack.set_transition_duration(0) # Set transition to 0 when opening
-                self.stack.set_transition_duration(0) # Keep stack transition to 0 for opening
+                self.applet_stack.set_transition_duration(0)
+                self.stack.set_transition_duration(0)
                 self.stack.set_visible_child(self.dashboard)
                 self.dashboard.add_style_class("open")
+                self.dashboard.go_to_section("widgets")  # Ensure we're on widgets section
                 self.applet_stack.set_visible_child(self.btdevices)
-                self._is_notch_open = True # Set notch state to open
-                # Reset the transition duration back to 250 after a short delay.
+                self._is_notch_open = True
                 GLib.timeout_add(10, lambda: [self.stack.set_transition_duration(100), self.applet_stack.set_transition_duration(250)][-1] or False)
 
                 self.bar.revealer_right.set_reveal_child(False)
@@ -326,14 +334,15 @@ class Notch(Window):
         # Handle the "dashboard" case
         if widget == "dashboard":
             if self.stack.get_visible_child() == self.dashboard:
-                # If dashboard is already open, ensure nhistory is visible.
-                if self.applet_stack.get_visible_child() != self.nhistory:
-                    self.applet_stack.set_transition_duration(250) # Set transition to 250 when already open
-                    self.applet_stack.set_visible_child(self.nhistory)
-                    return
-                else:
-                    # Otherwise, toggle the notch closed.
+                # If dashboard is already open and showing widgets, close it
+                if self.applet_stack.get_visible_child() == self.nhistory and self.dashboard.stack.get_visible_child() == self.dashboard.widgets:
                     self.close_notch()
+                    return
+                # Otherwise navigate to widgets and ensure nhistory is visible
+                else:
+                    self.applet_stack.set_transition_duration(250)
+                    self.applet_stack.set_visible_child(self.nhistory)
+                    self.dashboard.go_to_section("widgets")
                     return
             else:
                 self.set_keyboard_mode("exclusive")
@@ -348,14 +357,108 @@ class Notch(Window):
                     w.remove_style_class("open")
 
                 self.stack.add_style_class("dashboard")
-                self.applet_stack.set_transition_duration(0) # Set transition to 0 when opening
-                self.stack.set_transition_duration(0) # Keep stack transition to 0 for opening
+                self.applet_stack.set_transition_duration(0)
+                self.stack.set_transition_duration(0)
                 self.stack.set_visible_child(self.dashboard)
                 self.dashboard.add_style_class("open")
+                self.dashboard.go_to_section("widgets")  # Explicitly go to widgets section
                 self.applet_stack.set_visible_child(self.nhistory)
-                self._is_notch_open = True # Set notch state to open
+                self._is_notch_open = True
                 # Reset the transition duration back to 250 after a short delay.
                 GLib.timeout_add(10, lambda: [self.stack.set_transition_duration(100), self.applet_stack.set_transition_duration(250)][-1] or False)
+
+                self.bar.revealer_right.set_reveal_child(False)
+                self.bar.revealer_left.set_reveal_child(False)
+                return
+
+        # Handle pins section
+        if widget == "pins":
+            if self.stack.get_visible_child() == self.dashboard and self.dashboard.stack.get_visible_child() == self.dashboard.pins:
+                # If dashboard is already open and showing pins, close it
+                self.close_notch()
+                return
+            else:
+                # Open dashboard and navigate to pins
+                self.set_keyboard_mode("exclusive")
+
+                if self.hidden:
+                    self.notch_box.remove_style_class("hidden")
+                    self.notch_box.add_style_class("hideshow")
+
+                for style in ["launcher", "dashboard", "notification", "overview", "emoji", "power", "tools"]:
+                    self.stack.remove_style_class(style)
+                for w in [self.launcher, self.dashboard, self.overview, self.emoji, self.power, self.tools]:
+                    w.remove_style_class("open")
+
+                self.stack.add_style_class("dashboard")
+                self.stack.set_transition_duration(0)
+                self.stack.set_visible_child(self.dashboard)
+                self.dashboard.add_style_class("open")
+                self.dashboard.go_to_section("pins")
+                self._is_notch_open = True
+                GLib.timeout_add(10, lambda: self.stack.set_transition_duration(100) or False)
+
+                self.bar.revealer_right.set_reveal_child(False)
+                self.bar.revealer_left.set_reveal_child(False)
+                return
+                
+        # Handle kanban section
+        if widget == "kanban":
+            if self.stack.get_visible_child() == self.dashboard and self.dashboard.stack.get_visible_child() == self.dashboard.kanban:
+                # If dashboard is already open and showing kanban, close it
+                self.close_notch()
+                return
+            else:
+                # Open dashboard and navigate to kanban
+                self.set_keyboard_mode("exclusive")
+
+                if self.hidden:
+                    self.notch_box.remove_style_class("hidden")
+                    self.notch_box.add_style_class("hideshow")
+
+                for style in ["launcher", "dashboard", "notification", "overview", "emoji", "power", "tools"]:
+                    self.stack.remove_style_class(style)
+                for w in [self.launcher, self.dashboard, self.overview, self.emoji, self.power, self.tools]:
+                    w.remove_style_class("open")
+
+                self.stack.add_style_class("dashboard")
+                self.stack.set_transition_duration(0)
+                self.stack.set_visible_child(self.dashboard)
+                self.dashboard.add_style_class("open")
+                self.dashboard.go_to_section("kanban")
+                self._is_notch_open = True
+                GLib.timeout_add(10, lambda: self.stack.set_transition_duration(100) or False)
+
+                self.bar.revealer_right.set_reveal_child(False)
+                self.bar.revealer_left.set_reveal_child(False)
+                return
+                
+        # Handle wallpapers section
+        if widget == "wallpapers":
+            if self.stack.get_visible_child() == self.dashboard and self.dashboard.stack.get_visible_child() == self.dashboard.wallpapers:
+                # If dashboard is already open and showing wallpapers, close it
+                self.close_notch()
+                return
+            else:
+                # Open dashboard and navigate to wallpapers
+                self.set_keyboard_mode("exclusive")
+
+                if self.hidden:
+                    self.notch_box.remove_style_class("hidden")
+                    self.notch_box.add_style_class("hideshow")
+
+                for style in ["launcher", "dashboard", "notification", "overview", "emoji", "power", "tools"]:
+                    self.stack.remove_style_class(style)
+                for w in [self.launcher, self.dashboard, self.overview, self.emoji, self.power, self.tools]:
+                    w.remove_style_class("open")
+
+                self.stack.add_style_class("dashboard")
+                self.stack.set_transition_duration(0)
+                self.stack.set_visible_child(self.dashboard)
+                self.dashboard.add_style_class("open")
+                self.dashboard.go_to_section("wallpapers")
+                self._is_notch_open = True
+                GLib.timeout_add(10, lambda: self.stack.set_transition_duration(100) or False)
 
                 self.bar.revealer_right.set_reveal_child(False)
                 self.bar.revealer_left.set_reveal_child(False)

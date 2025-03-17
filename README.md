@@ -70,7 +70,6 @@ curl -fsSL https://raw.githubusercontent.com/Axenide/Ax-Shell/main/install.sh | 
     - [fabric-cli](https://github.com/Fabric-Development/fabric-cli)
     - [Gray](https://github.com/Fabric-Development/gray)
     - [Matugen](https://github.com/InioX/matugen)
-    - `acpi`
     - `brightnessctl`
     - `cava`
     - `gnome-bluetooth-3.0`

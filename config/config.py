@@ -1,28 +1,36 @@
+# Standard library imports
 import os
-import json
 import shutil
+import json
+import sys
+from pathlib import Path
+
+# Add the parent directory to sys.path to allow the direct execution of this script
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# Third-party imports
+import toml
+from PIL import Image
 import subprocess
 import gi
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-from PIL import Image
-import toml
 
+# Local imports - now using absolute import that will work when executed directly
+from config.data import (
+    APP_NAME, APP_NAME_CAP, CONFIG_DIR, HOME_DIR, WALLPAPERS_DIR_DEFAULT
+)
 from fabric.utils.helpers import get_relative_path
-import data
 
 # Constants
 SOURCE_STRING = f"""
-# {data.APP_NAME_CAP}
-source = ~/.config/{data.APP_NAME_CAP}/config/hypr/{data.APP_NAME}.conf
+# {APP_NAME_CAP}
+source = ~/.config/{APP_NAME_CAP}/config/hypr/{APP_NAME}.conf
 """
 
-CONFIG_DIR = os.path.expanduser(f"~/.config/{data.APP_NAME}")
-WALLPAPERS_DIR_DEFAULT = get_relative_path("../assets/wallpapers_example")
-
-# Default key binding values
-bind_vars = {
+# Initialize bind_vars with default values
+DEFAULT_KEYBINDINGS = {
     'prefix_restart': "SUPER ALT",
     'suffix_restart': "B",
     'prefix_axmsg': "SUPER",
@@ -31,12 +39,18 @@ bind_vars = {
     'suffix_dash': "D",
     'prefix_bluetooth': "SUPER",
     'suffix_bluetooth': "B",
+    'prefix_pins': "SUPER",
+    'suffix_pins': "Q",
+    'prefix_kanban': "SUPER",
+    'suffix_kanban': "N",
     'prefix_launcher': "SUPER",
     'suffix_launcher': "R",
     'prefix_toolbox': "SUPER",
     'suffix_toolbox': "S",
     'prefix_overview': "SUPER",
     'suffix_overview': "TAB",
+    'prefix_wallpapers': "SUPER",
+    'suffix_wallpapers': "COMMA",
     'prefix_emoji': "SUPER",
     'suffix_emoji': "PERIOD",
     'prefix_power': "SUPER",
@@ -49,6 +63,8 @@ bind_vars = {
     'prefix_restart_inspector': "SUPER CTRL ALT",
     'suffix_restart_inspector': "B",
 }
+
+bind_vars = DEFAULT_KEYBINDINGS.copy()
 
 
 def deep_update(target: dict, update: dict) -> dict:
@@ -115,13 +131,13 @@ def ensure_matugen_config():
         },
         'templates': {
             'hyprland': {
-                'input_path': f'~/.config/{data.APP_NAME_CAP}/config/matugen/templates/hyprland-colors.conf',
-                'output_path': f'~/.config/{data.APP_NAME_CAP}/config/hypr/colors.conf'
+                'input_path': f'~/.config/{APP_NAME_CAP}/config/matugen/templates/hyprland-colors.conf',
+                'output_path': f'~/.config/{APP_NAME_CAP}/config/hypr/colors.conf'
             },
-            f'{data.APP_NAME}': {
-                'input_path': f'~/.config/{data.APP_NAME_CAP}/config/matugen/templates/{data.APP_NAME}.css',
-                'output_path': f'~/.config/{data.APP_NAME_CAP}/styles/colors.css',
-                'post_hook': f"fabric-cli exec {data.APP_NAME} 'app.set_css()' &"
+            f'{APP_NAME}': {
+                'input_path': f'~/.config/{APP_NAME_CAP}/config/matugen/templates/{APP_NAME}.css',
+                'output_path': f'~/.config/{APP_NAME_CAP}/styles/colors.css',
+                'post_hook': f"fabric-cli exec {APP_NAME} 'app.set_css()' &"
             }
         }
     }
@@ -145,14 +161,14 @@ def ensure_matugen_config():
     # Trigger image generation if "~/.current.wall" does not exist
     current_wall = os.path.expanduser("~/.current.wall")
     if not os.path.exists(current_wall):
-        image_path = os.path.expanduser(f"~/.config/{data.APP_NAME_CAP}/assets/wallpapers_example/example-1.jpg")
+        image_path = os.path.expanduser(f"~/.config/{APP_NAME_CAP}/assets/wallpapers_example/example-1.jpg")
         os.system(f"matugen image {image_path}")
 
 def load_bind_vars():
     """
     Load saved key binding variables from JSON, if available.
     """
-    config_json = os.path.expanduser(f'~/.config/{data.APP_NAME_CAP}/config/config.json')
+    config_json = os.path.expanduser(f'~/.config/{APP_NAME_CAP}/config/config.json')
     try:
         with open(config_json, 'r') as f:
             saved_vars = json.load(f)
@@ -167,30 +183,33 @@ def generate_hyprconf() -> str:
     Generate the Hypr configuration string using the current bind_vars.
     """
     home = os.path.expanduser('~')
-    return f"""exec-once = uwsm app -- python {home}/.config/{data.APP_NAME_CAP}/main.py
+    return f"""exec-once = uwsm app -- python {home}/.config/{APP_NAME_CAP}/main.py
 exec = pgrep -x "hypridle" > /dev/null || uwsm app -- hypridle
 exec = uwsm app -- swww-daemon
 
-$fabricSend = fabric-cli exec {data.APP_NAME}
-$axMessage = notify-send "Axenide" "What are you doing?" -i "{home}/.config/{data.APP_NAME_CAP}/assets/ax.png" -a "Source Code" -A "Be patient. 🍙"
+$fabricSend = fabric-cli exec {APP_NAME}
+$axMessage = notify-send "Axenide" "What are you doing?" -i "{home}/.config/{APP_NAME_CAP}/assets/ax.png" -a "Source Code" -A "Be patient. 🍙"
 
-bind = {bind_vars['prefix_restart']}, {bind_vars['suffix_restart']}, exec, killall {data.APP_NAME}; uwsm app -- python {home}/.config/{data.APP_NAME_CAP}/main.py # Reload {data.APP_NAME_CAP} | Default: SUPER ALT + B
+bind = {bind_vars['prefix_restart']}, {bind_vars['suffix_restart']}, exec, killall {APP_NAME}; uwsm app -- python {home}/.config/{APP_NAME_CAP}/main.py # Reload {APP_NAME_CAP} | Default: SUPER ALT + B
 bind = {bind_vars['prefix_axmsg']}, {bind_vars['suffix_axmsg']}, exec, $axMessage # Message | Default: SUPER + A
 bind = {bind_vars['prefix_dash']}, {bind_vars['suffix_dash']}, exec, $fabricSend 'notch.open_notch("dashboard")' # Dashboard | Default: SUPER + D
 bind = {bind_vars['prefix_bluetooth']}, {bind_vars['suffix_bluetooth']}, exec, $fabricSend 'notch.open_notch("bluetooth")' # Bluetooth | Default: SUPER + B
+bind = {bind_vars['prefix_pins']}, {bind_vars['suffix_pins']}, exec, $fabricSend 'notch.open_notch("pins")' # Pins | Default: SUPER + Q
+bind = {bind_vars['prefix_kanban']}, {bind_vars['suffix_kanban']}, exec, $fabricSend 'notch.open_notch("kanban")' # Kanban | Default: SUPER + N
 bind = {bind_vars['prefix_launcher']}, {bind_vars['suffix_launcher']}, exec, $fabricSend 'notch.open_notch("launcher")' # App Launcher | Default: SUPER + R
 bind = {bind_vars['prefix_toolbox']}, {bind_vars['suffix_toolbox']}, exec, $fabricSend 'notch.open_notch("tools")' # Toolbox | Default: SUPER + S
 bind = {bind_vars['prefix_overview']}, {bind_vars['suffix_overview']}, exec, $fabricSend 'notch.open_notch("overview")' # Overview | Default: SUPER + TAB
+bind = {bind_vars['prefix_wallpapers']}, {bind_vars['suffix_wallpapers']}, exec, $fabricSend 'notch.open_notch("wallpapers")' # Wallpapers | Default: SUPER + COMMA
 bind = {bind_vars['prefix_emoji']}, {bind_vars['suffix_emoji']}, exec, $fabricSend 'notch.open_notch("emoji")' # Emoji | Default: SUPER + PERIOD
 bind = {bind_vars['prefix_power']}, {bind_vars['suffix_power']}, exec, $fabricSend 'notch.open_notch("power")' # Power Menu | Default: SUPER + ESCAPE
 bind = {bind_vars['prefix_toggle']}, {bind_vars['suffix_toggle']}, exec, $fabricSend 'bar.toggle_hidden()' # Toggle Bar | Default: SUPER CTRL + B
 bind = {bind_vars['prefix_toggle']}, {bind_vars['suffix_toggle']}, exec, $fabricSend 'notch.toggle_hidden()' # Toggle Notch | Default: SUPER CTRL + B
 bind = {bind_vars['prefix_css']}, {bind_vars['suffix_css']}, exec, $fabricSend 'app.set_css()' # Reload CSS | Default: SUPER SHIFT + B
-bind = {bind_vars['prefix_restart_inspector']}, {bind_vars['suffix_restart_inspector']}, exec, killall {data.APP_NAME}; GTK_DEBUG=interactive uwsm app -- python {home}/.config/{data.APP_NAME_CAP}/main.py # Restart with inspector | Default: SUPER CTRL ALT + B
+bind = {bind_vars['prefix_restart_inspector']}, {bind_vars['suffix_restart_inspector']}, exec, killall {APP_NAME}; GTK_DEBUG=interactive uwsm app -- python {home}/.config/{APP_NAME_CAP}/main.py # Restart with inspector | Default: SUPER CTRL ALT + B
 
 # Wallpapers directory: {bind_vars['wallpapers_dir']}
 
-source = {home}/.config/{data.APP_NAME_CAP}/config/hypr/colors.conf
+source = {home}/.config/{APP_NAME_CAP}/config/hypr/colors.conf
 
 layerrule = noanim, fabric
 
@@ -243,7 +262,7 @@ def ensure_face_icon():
     Ensure the face icon exists. If not, copy the default icon.
     """
     face_icon_path = os.path.expanduser("~/.face.icon")
-    default_icon_path = os.path.expanduser(f"~/.config/{data.APP_NAME_CAP}/assets/default.png")
+    default_icon_path = os.path.expanduser(f"~/.config/{APP_NAME_CAP}/assets/default.png")
     if not os.path.exists(face_icon_path) and os.path.exists(default_icon_path):
         shutil.copy(default_icon_path, face_icon_path)
 
@@ -284,13 +303,16 @@ class HyprConfGUI(Gtk.Window):
 
         self.entries = []
         bindings = [
-            (f"Reload {data.APP_NAME_CAP}", 'prefix_restart', 'suffix_restart'),
+            (f"Reload {APP_NAME_CAP}", 'prefix_restart', 'suffix_restart'),
             ("Message", 'prefix_axmsg', 'suffix_axmsg'),
             ("Dashboard", 'prefix_dash', 'suffix_dash'),
             ("Bluetooth", 'prefix_bluetooth', 'suffix_bluetooth'),
+            ("Pins", 'prefix_pins', 'suffix_pins'),
+            ("Kanban", 'prefix_kanban', 'suffix_kanban'),
             ("App Launcher", 'prefix_launcher', 'suffix_launcher'),
             ("Toolbox", 'prefix_toolbox', 'suffix_toolbox'),
             ("Overview", 'prefix_overview', 'suffix_overview'),
+            ("Wallpapers", 'prefix_wallpapers', 'suffix_wallpapers'),
             ("Emoji Picker", 'prefix_emoji', 'suffix_emoji'),
             ("Power Menu", 'prefix_power', 'suffix_power'),
             ("Toggle Bar and Notch", 'prefix_toggle', 'suffix_toggle'),
@@ -405,7 +427,7 @@ class HyprConfGUI(Gtk.Window):
         bind_vars['wallpapers_dir'] = self.wall_dir_chooser.get_filename()
 
         # Save the updated bind_vars to a JSON file
-        config_json = os.path.expanduser(f'~/.config/{data.APP_NAME_CAP}/config/config.json')
+        config_json = os.path.expanduser(f'~/.config/{APP_NAME_CAP}/config/config.json')
         os.makedirs(os.path.dirname(config_json), exist_ok=True)
         with open(config_json, 'w') as f:
             json.dump(bind_vars, f)
@@ -417,7 +439,7 @@ class HyprConfGUI(Gtk.Window):
                 side = min(img.size)
                 left = (img.width - side) / 2
                 top = (img.height - side) / 2
-                cropped_img = img.crop((left, top, left + side, top + side))
+                cropped_img = img.crop((left, top, left + side))
                 cropped_img.save(os.path.expanduser("~/.face.icon"), format='PNG')
                 print("Face icon saved.")
             except Exception as e:
@@ -425,13 +447,13 @@ class HyprConfGUI(Gtk.Window):
 
         # Replace hyprlock config if requested
         if hasattr(self, "lock_checkbox") and self.lock_checkbox.get_active():
-            src_lock = os.path.expanduser(f"~/.config/{data.APP_NAME_CAP}/config/hypr/hyprlock.conf")
+            src_lock = os.path.expanduser(f"~/.config/{APP_NAME_CAP}/config/hypr/hyprlock.conf")
             dest_lock = os.path.expanduser("~/.config/hypr/hyprlock.conf")
             backup_and_replace(src_lock, dest_lock, "Hyprlock")
 
         # Replace hypridle config if requested
         if hasattr(self, "idle_checkbox") and self.idle_checkbox.get_active():
-            src_idle = os.path.expanduser(f"~/.config/{data.APP_NAME_CAP}/config/hypr/hypridle.conf")
+            src_idle = os.path.expanduser(f"~/.config/{APP_NAME_CAP}/config/hypr/hypridle.conf")
             dest_idle = os.path.expanduser("~/.config/hypr/hypridle.conf")
             backup_and_replace(src_idle, dest_idle, "Hypridle")
 
@@ -458,9 +480,9 @@ def start_config():
     ensure_face_icon()
 
     # Write the generated hypr configuration to file
-    hypr_config_dir = os.path.expanduser(f"~/.config/{data.APP_NAME_CAP}/config/hypr/")
+    hypr_config_dir = os.path.expanduser(f"~/.config/{APP_NAME_CAP}/config/hypr/")
     os.makedirs(hypr_config_dir, exist_ok=True)
-    hypr_conf_path = os.path.join(hypr_config_dir, f"{data.APP_NAME}.conf")
+    hypr_conf_path = os.path.join(hypr_config_dir, f"{APP_NAME}.conf")
     with open(hypr_conf_path, "w") as f:
         f.write(generate_hyprconf())
 
@@ -476,7 +498,7 @@ def open_config():
 
     # Check and copy hyprlock config if needed
     dest_lock = os.path.expanduser("~/.config/hypr/hyprlock.conf")
-    src_lock = os.path.expanduser(f"~/.config/{data.APP_NAME_CAP}/config/hypr/hyprlock.conf")
+    src_lock = os.path.expanduser(f"~/.config/{APP_NAME_CAP}/config/hypr/hyprlock.conf")
     os.makedirs(os.path.dirname(dest_lock), exist_ok=True)
     show_lock_checkbox = True
     if not os.path.exists(dest_lock):
@@ -485,7 +507,7 @@ def open_config():
 
     # Check and copy hypridle config if needed
     dest_idle = os.path.expanduser("~/.config/hypr/hypridle.conf")
-    src_idle = os.path.expanduser(f"~/.config/{data.APP_NAME_CAP}/config/hypr/hypridle.conf")
+    src_idle = os.path.expanduser(f"~/.config/{APP_NAME_CAP}/config/hypr/hypridle.conf")
     show_idle_checkbox = True
     if not os.path.exists(dest_idle):
         shutil.copy(src_idle, dest_idle)

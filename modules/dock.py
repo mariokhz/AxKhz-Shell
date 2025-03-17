@@ -1,5 +1,6 @@
 import json
 from gi.repository import GLib, Gtk, Gdk, Gio
+import cairo
 from utils.icon_resolver import IconResolver
 from utils.occlusion import check_occlusion
 from fabric.widgets.box import Box
@@ -52,6 +53,21 @@ def read_config():
         data = {"pinned_apps": []}  # Default to empty pinned apps
     return data
 
+# Credit to Aylur for the createSurfaceFromWidget code
+def createSurfaceFromWidget(widget: Gtk.Widget) -> cairo.ImageSurface:
+    alloc = widget.get_allocation()
+    surface = cairo.ImageSurface(
+        cairo.Format.ARGB32,
+        alloc.width,
+        alloc.height,
+    )
+    cr = cairo.Context(surface)
+    cr.set_source_rgba(255, 255, 255, 0)
+    cr.rectangle(0, 0, alloc.width, alloc.height)
+    cr.fill()
+    widget.draw(cr)
+    return surface
+
 class Dock(Window):
     # Static registry to track all active dock instances
     _instances = []
@@ -81,23 +97,6 @@ class Dock(Window):
         self._arranger_handler = None
         self._drag_in_progress = False  # Drag lock flag
         self.is_hovered = False
-
-        # Common window class aliases for applications with mismatched classes
-        self.window_class_aliases = {
-            "audacity": ["audacity.bin"],
-            "firefox": ["firefox-esr", "firefoxdeveloperedition", "firefox-developer-edition"],
-            "libreoffice": ["libreoffice-writer", "libreoffice-calc", "libreoffice-impress", "soffice"],
-            "gimp": ["gimp-2.10"],
-            "chromium": ["chromium-browser", "chrome"],
-            "google-chrome": ["chrome"],
-            "steam": ["steam_app_", "steamwebhelper"],
-            "code": ["code-oss", "vscodium"],
-            "jetbrains-idea": ["jetbrains-idea-ce"],
-            "vlc": ["vlc-qt-interface"],
-            "krita": ["krita.bin"],
-            "blender": ["blender.bin"],
-            # Add more common aliases as needed
-        }
 
         # Set up UI containers
         self.view = Box(name="viewport", orientation="h", spacing=8)
@@ -194,7 +193,7 @@ class Dock(Window):
         return normalized
         
     def _classes_match(self, class1, class2):
-        """Check if two window class names match accounting for variations."""
+        """Check if two window class names match with stricter comparison."""
         if not class1 or not class2:
             return False
             
@@ -206,23 +205,15 @@ class Dock(Window):
         if norm1 == norm2:
             return True
             
-        # Check aliases
-        for base_class, aliases in self.window_class_aliases.items():
-            if norm1 == base_class and norm2 in aliases:
-                return True
-            if norm2 == base_class and norm1 in aliases:
-                return True
-                
-        # Check if one is contained within the other
-        if len(norm1) > 3 and len(norm2) > 3:  # Avoid short class names which could lead to false matches
-            if norm1 in norm2 or norm2 in norm1:
-                return True
-                
+        # Don't do substring matching as it's too error-prone
+        # This avoids incorrectly matching flatpak apps and others
         return False
 
     def on_drag_begin(self, widget, drag_context):
         """Handle drag begin event by setting the drag lock flag."""
         self._drag_in_progress = True
+        # Set custom drag icon using the widget surface
+        Gtk.drag_set_icon_surface(drag_context, createSurfaceFromWidget(widget))
 
     def _on_hover_enter(self, *args):
         """Handle hover over bottom activation area"""
@@ -528,40 +519,22 @@ class Dock(Window):
             matched_class = None
             
             if app:
-                # Try matching by window class with improved matching
+                # Try matching by window class with exact matching (to avoid incorrect associations)
                 if app.window_class:
                     app_class = app.window_class.lower()
-                    # First try direct match
+                    # First try direct match only
                     if app_class in running_windows:
                         instances = running_windows[app_class]
                         matched_class = app_class
-                    else:
-                        # Try matching with window class variations and aliases
-                        for class_name in running_windows.keys():
-                            if self._classes_match(app_class, class_name):
-                                instances = running_windows[class_name]
-                                matched_class = class_name
-                                break
-                
+                    
                 # If no instances found by window class, try by executable name
                 if not instances and app.executable:
                     exe_base = app.executable.split('/')[-1].lower()
                     
                     # Try exact match first
-                    for class_key in running_windows.keys():
-                        if exe_base == class_key:
-                            instances = running_windows[class_key]
-                            matched_class = class_key
-                            break
-                    
-                    # Then try fuzzy matching with executable
-                    if not instances:
-                        for class_key, class_instances in running_windows.items():
-                            # Check if executable is a substring of class or vice versa
-                            if exe_base in class_key or class_key in exe_base:
-                                instances = class_instances
-                                matched_class = class_key
-                                break
+                    if exe_base in running_windows:
+                        instances = running_windows[exe_base]
+                        matched_class = exe_base
                 
                 # Try app name as last resort
                 if not instances and app.name:
@@ -571,13 +544,6 @@ class Dock(Window):
                     if app_name in running_windows:
                         instances = running_windows[app_name]
                         matched_class = app_name
-                    else:
-                        # Try fuzzy name matching
-                        for class_key, class_instances in running_windows.items():
-                            if app_name in class_key or class_key in app_name:
-                                instances = class_instances
-                                matched_class = class_key
-                                break
                     
                 # If we're using a dict app_data, try matching with its window_class
                 if not instances and isinstance(app_data, dict) and "window_class" in app_data and app_data["window_class"] is not None:
@@ -587,13 +553,6 @@ class Dock(Window):
                     if dict_class in running_windows:
                         instances = running_windows[dict_class]
                         matched_class = dict_class
-                    else:
-                        # Try matching with improved window class matching
-                        for class_key in running_windows.keys():
-                            if self._classes_match(dict_class, class_key):
-                                instances = running_windows[class_key]
-                                matched_class = class_key
-                                break
             
             # Mark the matched class as used
             if matched_class:
@@ -606,26 +565,49 @@ class Dock(Window):
         open_buttons = []
         for class_name, instances in running_windows.items():
             if class_name not in used_window_classes:
-                # Check if this window class matches any known alias
-                skip = False
-                for base_class, aliases in self.window_class_aliases.items():
-                    if class_name in aliases:
-                        # Skip if this is an alias that might be handled elsewhere
-                        norm_class = self._normalize_window_class(class_name)
-                        if norm_class in used_window_classes or base_class in used_window_classes:
-                            skip = True
-                            break
-                            
-                if skip:
-                    continue
-                            
-                # Try to find a proper app identifier for this window class
+                # Enhanced app identification for running windows
+                app = None
+                
+                # Try multiple methods to find the correct app
+                # 1. Direct lookup by class name
                 app = self.app_identifiers.get(class_name)
-                identifier = app.name if app else class_name
+                
+                # 2. Try with normalized class name
+                if not app:
+                    norm_class = self._normalize_window_class(class_name)
+                    app = self.app_identifiers.get(norm_class)
+                    
+                # 3. Try with our more robust find_app method
+                if not app:
+                    app = self.find_app_by_key(class_name)
+                
+                # 4. Try using window title which often contains app name
+                if not app and instances and instances[0].get("title"):
+                    title = instances[0].get("title", "")
+                    # Extract potential app name from title (common format: "App Name - Document")
+                    potential_name = title.split(" - ")[0].strip()
+                    if len(potential_name) > 2:  # Avoid very short names
+                        app = self.find_app_by_key(potential_name)
+                
+                # Create comprehensive app data if app was found
+                if app:
+                    app_data = {
+                        "name": app.name,
+                        "display_name": app.display_name,
+                        "window_class": app.window_class,
+                        "executable": app.executable,
+                        "command_line": app.command_line
+                    }
+                    identifier = app_data
+                else:
+                    # Fallback to just class name
+                    identifier = class_name
+                
                 open_buttons.append(self.create_button(identifier, instances))
 
         # Assemble dock layout
         children = pinned_buttons
+        # Only add separator if both pinned and open buttons exist
         if pinned_buttons and open_buttons:
             children += [Box(orientation="v", v_expand=True, name="dock-separator")]
         children += open_buttons
@@ -709,10 +691,29 @@ class Dock(Window):
             return
 
         if source_index != target_index:
+            # Check for separator to detect cross-section drag
+            separator_index = -1
+            for i, child in enumerate(children):
+                if child.get_name() == "dock-separator":
+                    separator_index = i
+                    break
+                    
+            # Detect if we're dragging across the separator (between pinned/unpinned)
+            cross_section_drag = (separator_index != -1 and
+                                 ((source_index < separator_index and target_index > separator_index) or
+                                  (source_index > separator_index and target_index < separator_index)))
+            
+            # Move the item in the children list
             child = children.pop(source_index)
             children.insert(target_index, child)
             self.view.children = children  # Update view immediately
-            self.update_pinned_apps(skip_update=True)  # Skip dock update to avoid recursive updates
+            
+            # Update pinned apps configuration
+            self.update_pinned_apps(skip_update=not cross_section_drag)
+            
+            # Force immediate update if we dragged across sections to update separator visibility
+            if cross_section_drag:
+                GLib.idle_add(self.update_dock)
 
     def on_drag_end(self, widget, drag_context):
         """Handles drag end, for unpinning and closing apps."""

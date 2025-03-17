@@ -7,7 +7,6 @@ set -o pipefail  # Prevent errors in a pipeline from being masked
 REPO_URL="https://github.com/Axenide/Ax-Shell.git"
 INSTALL_DIR="$HOME/.config/Ax-Shell"
 PACKAGES=(
-  acpi
   brightnessctl
   cava
   fabric-cli-git

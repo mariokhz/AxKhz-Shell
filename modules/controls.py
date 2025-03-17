@@ -1,14 +1,25 @@
+# Standard library imports
+# Add any std lib imports here
+
+# Third-party imports
 from gi.repository import GLib, Gdk
+
+# Fabric imports
 from fabric.widgets.box import Box
-from fabric.widgets.label import Label
-from fabric.widgets.scale import Scale
-from fabric.audio.service import Audio
 from fabric.widgets.button import Button
-from fabric.widgets.overlay import Overlay
-from fabric.widgets.eventbox import EventBox
 from fabric.widgets.circularprogressbar import CircularProgressBar
-from services.brightness import Brightness
+from fabric.widgets.eventbox import EventBox
+from fabric.widgets.label import Label
+from fabric.widgets.overlay import Overlay
+# Add other fabric imports as needed
+
+# Local imports
 import modules.icons as icons
+# Other local imports as needed
+
+from fabric.audio.service import Audio
+from fabric.widgets.scale import Scale
+from services.brightness import Brightness
 
 class VolumeSlider(Scale):
     def __init__(self, **kwargs):

@@ -182,3 +182,16 @@ class Dashboard(Box):
             new_start_text, new_end_text = random.choice(text_pairs)
             self.coming_soon_start_label.set_text(new_start_text)
             self.coming_soon_end_label.set_text(new_end_text)
+
+    def go_to_section(self, section_name):
+        """Navigate to a specific section in the dashboard."""
+        if section_name == "widgets":
+            self.stack.set_visible_child(self.widgets)
+        elif section_name == "pins":
+            self.stack.set_visible_child(self.pins)
+        elif section_name == "kanban":
+            self.stack.set_visible_child(self.kanban)
+        elif section_name == "wallpapers":
+            self.stack.set_visible_child(self.wallpapers)
+        elif section_name == "coming-soon":
+            self.stack.set_visible_child(self.coming_soon)

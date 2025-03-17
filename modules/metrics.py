@@ -1,32 +1,43 @@
-import psutil
-import subprocess
+# Standard library imports
 import re
+import subprocess
+
+# Third-party imports
+import psutil
 from gi.repository import GLib
 
-from fabric.widgets.label import Label
+# Fabric imports
+from fabric.core.fabricator import Fabricator
+from fabric.utils.helpers import exec_shell_command_async
 from fabric.widgets.box import Box
-from fabric.widgets.scale import Scale
-from fabric.widgets.eventbox import EventBox
 from fabric.widgets.button import Button
 from fabric.widgets.circularprogressbar import CircularProgressBar
+from fabric.widgets.eventbox import EventBox
+from fabric.widgets.label import Label
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.revealer import Revealer
+from fabric.widgets.scale import Scale
 from fabric.core.fabricator import Fabricator
 from fabric.utils.helpers import exec_shell_command_async, invoke_repeater
 
+# Local imports
 import modules.icons as icons
 from services.network import NetworkClient
 import time
 
 class MetricsProvider:
     """
-    Class responsible for obtaining centralized CPU, memory, and disk usage metrics.
+    Class responsible for obtaining centralized CPU, memory, disk usage, and battery metrics.
     It updates periodically so that all widgets querying it display the same values.
     """
     def __init__(self):
         self.cpu = 0.0
         self.mem = 0.0
         self.disk = 0.0
+
+        self.bat_percent = 0.0
+        self.bat_charging = None
+
         # Updates every 1 second
         GLib.timeout_add_seconds(1, self._update)
 
@@ -36,10 +47,22 @@ class MetricsProvider:
         self.cpu = psutil.cpu_percent(interval=0)
         self.mem = psutil.virtual_memory().percent
         self.disk = psutil.disk_usage("/").percent
+
+        battery = psutil.sensors_battery()
+        if battery is None:
+            self.bat_percent = 0.0
+            self.bat_charging = None
+        else:
+            self.bat_percent = battery.percent
+            self.bat_charging = battery.power_plugged
+
         return True
 
     def get_metrics(self):
         return (self.cpu, self.mem, self.disk)
+
+    def get_battery(self):
+        return (self.bat_percent, self.bat_charging)
 
 # Global instance to share data between both widgets.
 shared_provider = MetricsProvider()
@@ -381,9 +404,15 @@ class Battery(Overlay):
         )
 
         # Actualización de la batería cada segundo
-        self.batt_fabricator = Fabricator(lambda *args, **kwargs: self.poll_battery(), interval=1000, stream=False, default_value=0)
+        self.batt_fabricator = Fabricator(
+            poll_from=lambda v: shared_provider.get_battery(),
+            on_changed=lambda f, v: self.update_battery,
+            interval=1000,
+            stream=False,
+            default_value=0
+        )
         self.batt_fabricator.changed.connect(self.update_battery)
-        GLib.idle_add(self.update_battery, None, self.poll_battery())
+        GLib.idle_add(self.update_battery, None, shared_provider.get_battery())
 
         # Estado inicial de los revealers y variables para la gestión del hover
         self.hide_timer = None
@@ -433,13 +462,13 @@ class Battery(Overlay):
         return (0, None)
 
     def update_battery(self, sender, battery_data):
-        value, status = battery_data
+        value, charging = battery_data
         if value == 0:
             self.set_visible(False)
         else:
             self.set_visible(True)
-            self.bat_circle.set_value(value)
-        percentage = int(value * 100)
+            self.bat_circle.set_value(value / 100)
+        percentage = int(value)
         self.bat_level.set_label(self._format_percentage(percentage))
         if percentage <= 15:
             self.bat_icon.set_markup(icons.alert)
@@ -448,11 +477,11 @@ class Battery(Overlay):
         else:
             self.bat_icon.remove_style_class("alert")
             self.bat_circle.remove_style_class("alert")
-            if status == "Discharging":
+            if charging == False:
                 self.bat_icon.set_markup(icons.discharging)
             elif percentage == 100:
                 self.bat_icon.set_markup(icons.battery)
-            elif status == "Charging":
+            elif charging == True:
                 self.bat_icon.set_markup(icons.charging)
             else:
                 self.bat_icon.set_markup(icons.battery)
