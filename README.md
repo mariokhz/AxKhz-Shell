@@ -14,7 +14,7 @@ Here is a quick comparison with Ax-Shell. I am in direct contact with the origin
   <img src="assets/screenshots/cavalcade.png">
 </p>
 
-### Network speed
+### Network speed 
 - [ ] Merged
 <p align="center">
   <img src="assets/screenshots/default-wifi.png">
@@ -30,6 +30,14 @@ Here is a quick comparison with Ax-Shell. I am in direct contact with the origin
   <img src="assets/screenshots/windowtitle.png">
 </p>
 I use win_class for the icons, and win_title as the text
+
+### Battery
+- Battery monitoring implemented with ```psutil``` library instead of ```acpi``` commands
+- Maintains Axenide's ```auto-cpufreq``` control buttons for power management
+<p align="center">
+  <img src="assets/screenshots/battery.png">
+</p>
+
 
 ### Icons in launcher
 <p align="center">
