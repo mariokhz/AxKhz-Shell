@@ -194,7 +194,7 @@ class Bar(Window):
                     #self.updates,
                     self.systray,
                     self.button_tools,
-                    self.language,
+                    #self.language,
                     self.date_time,
                     self.button_power,
                 ],
