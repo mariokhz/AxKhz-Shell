@@ -44,61 +44,58 @@
 }
 
 #download-label {
-  color: #E6FF95;
+  color: var(--green);
   font-size: 14px;
   font-weight: bold;
   padding: 4px;
   border-radius: 11px;
   transition: all 0.1s ease;
-  }
-  
-  #download-label.urgent {
-  color: var(--shadow);
-  }
-  
-  #network-icon-label.urgent {
-  color: var(--shadow);
-  }
-  
-  #button-bar.download {
-    background-color: #E6FF95;
-  }
-  
-  #button-bar.upload {
-      background-color: #FFD695;
-  }
-  
-  
-  #download-icon-label {
-  color: #E6FF95;
-  font-size: 16px;
-  }
-  
-  #download-icon-label.urgent {
-  color: var(--shadow);
-  }
-  
-  #upload-icon-label {
-      color: #FFD695;
-      font-size: 16px;
-  }
-  
-  #upload-label {
-      color: #FFD695;
-      font-size: 14px;
-      font-weight: bold;
-      padding: 4px;
-      border-radius: 11px;
-      transition: all 0.1s ease;
-  }
-  
-  #upload-label.urgent {
-      color: var(--shadow);
-  }
-  
-  #upload-icon-label.urgent {
-      color: var(--shadow);
-  }
-  
-  
+}
 
+#download-label.urgent {
+  color: var(--shadow);
+}
+
+#network-icon-label.urgent {
+  color: var(--shadow);
+}
+
+#button-bar.download {
+  background-color: var(--green);
+}
+
+#button-bar.upload {
+  background-color: var(--yellow);
+}
+
+
+#download-icon-label {
+  color: var(--green);
+  font-size: 16px;
+}
+
+#download-icon-label.urgent {
+  color: var(--shadow);
+}
+
+#upload-icon-label {
+  color: var(--yellow);
+  font-size: 16px;
+}
+
+#upload-label {
+  color: var(--yellow);
+  font-size: 14px;
+  font-weight: bold;
+  padding: 4px;
+  border-radius: 11px;
+  transition: all 0.1s ease;
+}
+
+#upload-label.urgent {
+  color: var(--shadow);
+}
+
+#upload-icon-label.urgent {
+  color: var(--shadow);
+}

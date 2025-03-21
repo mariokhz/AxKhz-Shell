@@ -22,6 +22,7 @@ from config.data import (
     APP_NAME, APP_NAME_CAP, CONFIG_DIR, HOME_DIR, WALLPAPERS_DIR_DEFAULT
 )
 from fabric.utils.helpers import get_relative_path
+from gi.repository import GdkPixbuf
 
 # Constants
 SOURCE_STRING = f"""
@@ -281,25 +282,80 @@ def backup_and_replace(src: str, dest: str, config_name: str):
 
 class HyprConfGUI(Gtk.Window):
     def __init__(self, show_lock_checkbox: bool, show_idle_checkbox: bool):
-        super().__init__(title="Configure Key Binds")
-        self.set_border_width(20)
-        self.set_default_size(500, 450)
+        super().__init__(title="Ax-Shell Settings")
+        self.set_border_width(10)
+        self.set_default_size(500, 550)
         self.set_resizable(False)
 
         self.selected_face_icon = None
+        self.show_lock_checkbox = show_lock_checkbox
+        self.show_idle_checkbox = show_idle_checkbox
 
-        # Use a grid for a more homogeneous layout
+        # Main vertical box to contain the notebook and buttons
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.add(main_box)
+
+        # Create notebook for tabs
+        notebook = Gtk.Notebook()
+        notebook.set_margin_top(5)
+        notebook.set_margin_bottom(10)
+        main_box.pack_start(notebook, True, True, 0)
+
+        # Create tabs
+        key_bindings_tab = self.create_key_bindings_tab()
+        notebook.append_page(key_bindings_tab, Gtk.Label(label="Key Bindings"))
+
+        appearance_tab = self.create_appearance_tab()
+        notebook.append_page(appearance_tab, Gtk.Label(label="Appearance"))
+
+        system_tab = self.create_system_tab()
+        notebook.append_page(system_tab, Gtk.Label(label="System"))
+
+        # Button box for Cancel and Accept buttons
+        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        button_box.set_halign(Gtk.Align.END)
+
+        cancel_btn = Gtk.Button(label="Cancel")
+        cancel_btn.connect("clicked", self.on_cancel)
+        button_box.pack_start(cancel_btn, False, False, 0)
+
+        accept_btn = Gtk.Button(label="Accept")
+        accept_btn.connect("clicked", self.on_accept)
+        button_box.pack_start(accept_btn, False, False, 0)
+
+        main_box.pack_start(button_box, False, False, 0)
+
+    def create_key_bindings_tab(self):
+        """Create tab for key bindings configuration."""
+        scrolled_window = Gtk.ScrolledWindow()
+        scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
         grid = Gtk.Grid(column_spacing=10, row_spacing=10)
-        grid.set_margin_top(10)
-        grid.set_margin_bottom(10)
-        grid.set_margin_start(10)
-        grid.set_margin_end(10)
-        self.add(grid)
+        grid.set_margin_top(15)
+        grid.set_margin_bottom(15)
+        grid.set_margin_start(15)
+        grid.set_margin_end(15)
+        scrolled_window.add(grid)
 
-        # Header label spanning across columns
-        header = Gtk.Label(label="Configure Key Bindings")
-        header.set_halign(Gtk.Align.CENTER)
-        grid.attach(header, 0, 0, 4, 1)
+        # Create labels for columns
+        action_label = Gtk.Label(label="Action")
+        action_label.set_halign(Gtk.Align.START)
+        action_label.set_margin_bottom(5)
+        action_label.get_style_context().add_class("heading")
+
+        modifier_label = Gtk.Label(label="Modifier")
+        modifier_label.set_halign(Gtk.Align.START)
+        modifier_label.set_margin_bottom(5)
+        modifier_label.get_style_context().add_class("heading")
+
+        key_label = Gtk.Label(label="Key")
+        key_label.set_halign(Gtk.Align.START)
+        key_label.set_margin_bottom(5)
+        key_label.get_style_context().add_class("heading")
+
+        grid.attach(action_label, 0, 1, 1, 1)
+        grid.attach(modifier_label, 1, 1, 1, 1) 
+        grid.attach(key_label, 3, 1, 1, 1)
 
         self.entries = []
         bindings = [
@@ -320,8 +376,8 @@ class HyprConfGUI(Gtk.Window):
             ("Restart with inspector", 'prefix_restart_inspector', 'suffix_restart_inspector'),
         ]
 
-        # Populate grid with key binding rows, starting at row 1
-        row = 1
+        # Populate grid with key binding rows, starting at row 2
+        row = 2
         for label_text, prefix_key, suffix_key in bindings:
             # Binding description
             binding_label = Gtk.Label(label=label_text)
@@ -345,45 +401,104 @@ class HyprConfGUI(Gtk.Window):
             self.entries.append((prefix_key, suffix_key, prefix_entry, suffix_entry))
             row += 1
 
-        # Row for Wallpapers Directory chooser
-        wall_label = Gtk.Label(label="Wallpapers Directory")
+        return scrolled_window
+
+    def create_appearance_tab(self):
+        """Create tab for appearance settings."""
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
+        box.set_margin_top(15)
+        box.set_margin_bottom(15)
+        box.set_margin_start(15)
+        box.set_margin_end(15)
+
+        # Wallpapers section
+        wall_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+
+        wall_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        wall_label = Gtk.Label(label="Wallpapers Directory:")
         wall_label.set_halign(Gtk.Align.START)
-        grid.attach(wall_label, 0, row, 1, 1)
         self.wall_dir_chooser = Gtk.FileChooserButton(
             title="Select a folder",
             action=Gtk.FileChooserAction.SELECT_FOLDER
         )
         self.wall_dir_chooser.set_filename(bind_vars['wallpapers_dir'])
-        grid.attach(self.wall_dir_chooser, 1, row, 3, 1)
-        row += 1
+        wall_hbox.pack_start(wall_label, False, False, 0)
+        wall_hbox.pack_start(self.wall_dir_chooser, True, True, 0)
+        wall_section.pack_start(wall_hbox, False, False, 0)
 
-        # Row for Profile Icon selection
-        face_label = Gtk.Label(label="Profile Icon")
+        box.pack_start(wall_section, False, False, 0)
+
+        # Separator
+        separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        box.pack_start(separator, False, False, 5)
+
+        # Profile Icon section
+        face_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+
+        face_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        face_label = Gtk.Label(label="Profile Icon:")
         face_label.set_halign(Gtk.Align.START)
-        grid.attach(face_label, 0, row, 1, 1)
         face_btn = Gtk.Button(label="Select Image")
         face_btn.connect("clicked", self.on_select_face_icon)
-        grid.attach(face_btn, 1, row, 3, 1)
-        row += 1
+        
+        # Show current face icon if it exists as a pixbuf of size 24
+        current_face = os.path.expanduser("~/.face.icon")
+        face_image = Gtk.Image()
+        try:
+            if os.path.exists(current_face):
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file(current_face)
+                pixbuf = pixbuf.scale_simple(24, 24, GdkPixbuf.InterpType.BILINEAR)
+            else:
+                pixbuf = Gtk.IconTheme.get_default().load_icon("user-info", 24, 0)
+            face_image.set_from_pixbuf(pixbuf)
+        except Exception:
+            pass
+        face_hbox.pack_start(face_image, False, False, 0)
+            
+        face_hbox.pack_start(face_label, False, False, 0)
+        face_hbox.pack_start(face_btn, True, False, 0)
+        face_section.pack_start(face_hbox, False, False, 0)
+        
+        self.face_status_label = Gtk.Label(label="")
+        face_section.pack_start(self.face_status_label, False, False, 0)
 
-        # Row for optional checkboxes
-        if show_lock_checkbox:
+        box.pack_start(face_section, False, False, 0)
+
+        return box
+
+    def create_system_tab(self):
+        """Create tab for system configurations."""
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
+        box.set_margin_top(15)
+        box.set_margin_bottom(15)
+        box.set_margin_start(15)
+        box.set_margin_end(15)
+
+        # Hypr Configuration section
+        hypr_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+
+        # Checkboxes for Hyprlock and Hypridle
+        if self.show_lock_checkbox:
             self.lock_checkbox = Gtk.CheckButton(label="Replace Hyprlock config")
             self.lock_checkbox.set_active(False)
-            grid.attach(self.lock_checkbox, 0, row, 2, 1)
-        if show_idle_checkbox:
+            hypr_section.pack_start(self.lock_checkbox, False, False, 10)
+        else:
+            self.lock_checkbox = None
+
+        if self.show_idle_checkbox:
             self.idle_checkbox = Gtk.CheckButton(label="Replace Hypridle config")
             self.idle_checkbox.set_active(False)
-            grid.attach(self.idle_checkbox, 2, row, 2, 1)
-        row += 1
+            hypr_section.pack_start(self.idle_checkbox, False, False, 10)
+        else:
+            self.idle_checkbox = None
 
-        # Row for Cancel and Accept buttons, aligned to the right
-        cancel_btn = Gtk.Button(label="Cancel")
-        cancel_btn.connect("clicked", self.on_cancel)
-        accept_btn = Gtk.Button(label="Accept")
-        accept_btn.connect("clicked", self.on_accept)
-        grid.attach(cancel_btn, 2, row, 1, 1)
-        grid.attach(accept_btn, 3, row, 1, 1)
+        box.pack_start(hypr_section, False, False, 0)
+
+        # Spacer to push everything to the top
+        spacer = Gtk.Box()
+        box.pack_start(spacer, True, True, 0)
+
+        return box
 
     def on_select_face_icon(self, widget):
         """
@@ -411,7 +526,7 @@ class HyprConfGUI(Gtk.Window):
 
         if dialog.run() == Gtk.ResponseType.OK:
             self.selected_face_icon = dialog.get_filename()
-            print(f"Face icon selected: {self.selected_face_icon}")
+            self.face_status_label.set_text(f"Selected: {os.path.basename(self.selected_face_icon)}")
         dialog.destroy()
 
     def on_accept(self, widget):
@@ -439,20 +554,20 @@ class HyprConfGUI(Gtk.Window):
                 side = min(img.size)
                 left = (img.width - side) / 2
                 top = (img.height - side) / 2
-                cropped_img = img.crop((left, top, left + side))
+                cropped_img = img.crop((left, top, left + side, top + side))
                 cropped_img.save(os.path.expanduser("~/.face.icon"), format='PNG')
                 print("Face icon saved.")
             except Exception as e:
                 print("Error processing face icon:", e)
 
         # Replace hyprlock config if requested
-        if hasattr(self, "lock_checkbox") and self.lock_checkbox.get_active():
+        if self.lock_checkbox and self.lock_checkbox.get_active():
             src_lock = os.path.expanduser(f"~/.config/{APP_NAME_CAP}/config/hypr/hyprlock.conf")
             dest_lock = os.path.expanduser("~/.config/hypr/hyprlock.conf")
             backup_and_replace(src_lock, dest_lock, "Hyprlock")
 
         # Replace hypridle config if requested
-        if hasattr(self, "idle_checkbox") and self.idle_checkbox.get_active():
+        if self.idle_checkbox and self.idle_checkbox.get_active():
             src_idle = os.path.expanduser(f"~/.config/{APP_NAME_CAP}/config/hypr/hypridle.conf")
             dest_idle = os.path.expanduser("~/.config/hypr/hypridle.conf")
             backup_and_replace(src_idle, dest_idle, "Hypridle")

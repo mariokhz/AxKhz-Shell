@@ -1,5 +1,5 @@
 import json
-from gi.repository import GLib, Gtk, Gdk, Gio
+from gi.repository import GLib, Gtk, Gdk
 import cairo
 from utils.icon_resolver import IconResolver
 from utils.occlusion import check_occlusion
@@ -14,6 +14,8 @@ from fabric.utils.helpers import get_desktop_applications
 
 import config.data as data
 import logging
+
+OCCLUSION = 36 + data.DOCK_ICON_SIZE
 
 def read_config():
     """Read and return the full configuration from the JSON file, handling missing file."""
@@ -57,7 +59,7 @@ def read_config():
 def createSurfaceFromWidget(widget: Gtk.Widget) -> cairo.ImageSurface:
     alloc = widget.get_allocation()
     surface = cairo.ImageSurface(
-        cairo.Format.ARGB32,
+        cairo.Format.ARGB28,
         alloc.width,
         alloc.height,
     )
@@ -99,7 +101,7 @@ class Dock(Window):
         self.is_hovered = False
 
         # Set up UI containers
-        self.view = Box(name="viewport", orientation="h", spacing=8)
+        self.view = Box(name="viewport", orientation="h", spacing=4)
         self.wrapper = Box(name="dock", orientation="v", children=[self.view])
 
         # Main dock container with hover handling
@@ -243,7 +245,7 @@ class Dock(Window):
         self.is_hovered = False
         self.delay_hide()
         # Immediate occlusion check on true leave
-        occlusion_region = (0, data.CURRENT_HEIGHT - 70, data.CURRENT_WIDTH, 70)
+        occlusion_region = (0, data.CURRENT_HEIGHT - OCCLUSION, data.CURRENT_WIDTH, OCCLUSION)
         # Only add occlusion style if not dragging an icon.
         if not self._drag_in_progress and (check_occlusion(occlusion_region) or not self.view.get_children()):
             self.wrapper.add_style_class("occluded")
@@ -310,7 +312,7 @@ class Dock(Window):
         display_name = None
         
         if desktop_app:
-            icon_img = desktop_app.get_icon_pixbuf(size=36)
+            icon_img = desktop_app.get_icon_pixbuf(size=data.DOCK_ICON_SIZE)
             display_name = desktop_app.display_name or desktop_app.name
         
         # Extract identifier for fallback
@@ -318,14 +320,14 @@ class Dock(Window):
         
         if not icon_img:
             # Fallback to IconResolver with the app command
-            icon_img = self.icon.get_icon_pixbuf(id_value, 36) # Use identifier for fallback
+            icon_img = self.icon.get_icon_pixbuf(id_value, data.DOCK_ICON_SIZE) # Use identifier for fallback
         
         if not icon_img: # Double check after exec path try
             # Fallback icon if no DesktopApp is found
-            icon_img = self.icon.get_icon_pixbuf("application-x-executable-symbolic", 36)
+            icon_img = self.icon.get_icon_pixbuf("application-x-executable-symbolic", data.DOCK_ICON_SIZE)
             # Final fallback
             if not icon_img:
-                icon_img = self.icon.get_icon_pixbuf("image-missing", 36)
+                icon_img = self.icon.get_icon_pixbuf("image-missing", data.DOCK_ICON_SIZE)
                 
         items = [Image(pixbuf=icon_img)]
 
@@ -492,7 +494,7 @@ class Dock(Window):
             elif title := c.get("title", "").lower():
                 # Extract app name from title (common format: "App Name - Document")
                 possible_name = title.split(" - ")[0].strip()
-                if possible_name and len(possible_name) > 1:  # Avoid single letter app names
+                if possible_name and len(potential_name) > 1:  # Avoid single letter app names
                     window_id = possible_name
                 else:
                     window_id = title  # Use full title if we can't extract a good name
@@ -504,8 +506,13 @@ class Dock(Window):
             # Log window for debugging purposes
             logging.debug(f"Window detected: {window_id} (from {c.get('initialClass', '')}/{c.get('class', '')}/{c.get('title', '')})")
                 
-            # Add to running windows
+            # Add to running windows - store with both original and normalized keys
             running_windows.setdefault(window_id, []).append(c)
+            
+            # Also store with normalized key for more flexible matching
+            normalized_id = self._normalize_window_class(window_id)
+            if normalized_id != window_id:
+                running_windows.setdefault(normalized_id, []).extend(running_windows[window_id])
         
         # Map pinned apps to their running instances
         pinned_buttons = []
@@ -518,45 +525,68 @@ class Dock(Window):
             instances = []
             matched_class = None
             
+            # Extract all possible identifiers from app_data for matching
+            possible_identifiers = []
+            
+            if isinstance(app_data, dict):
+                for key in ["window_class", "executable", "command_line", "name", "display_name"]:
+                    if key in app_data and app_data[key]:
+                        possible_identifiers.append(app_data[key].lower())
+            elif isinstance(app_data, str):
+                possible_identifiers.append(app_data.lower())
+            
+            # Add identifiers from DesktopApp if available
             if app:
-                # Try matching by window class with exact matching (to avoid incorrect associations)
-                if app.window_class:
-                    app_class = app.window_class.lower()
-                    # First try direct match only
-                    if app_class in running_windows:
-                        instances = running_windows[app_class]
-                        matched_class = app_class
-                    
-                # If no instances found by window class, try by executable name
-                if not instances and app.executable:
-                    exe_base = app.executable.split('/')[-1].lower()
-                    
-                    # Try exact match first
-                    if exe_base in running_windows:
-                        instances = running_windows[exe_base]
-                        matched_class = exe_base
+                if app.window_class: 
+                    possible_identifiers.append(app.window_class.lower())
+                if app.executable:
+                    possible_identifiers.append(app.executable.split('/')[-1].lower())
+                if app.command_line:
+                    cmd_parts = app.command_line.split()
+                    if cmd_parts:
+                        possible_identifiers.append(cmd_parts[0].split('/')[-1].lower())
+                if app.name:
+                    possible_identifiers.append(app.name.lower())
+                if app.display_name:
+                    possible_identifiers.append(app.display_name.lower())
+            
+            # Remove duplicates
+            possible_identifiers = list(set(possible_identifiers))
+            
+            # Try each identifier for matching
+            for identifier in possible_identifiers:
+                # Try direct match
+                if identifier in running_windows:
+                    instances = running_windows[identifier]
+                    matched_class = identifier
+                    break
                 
-                # Try app name as last resort
-                if not instances and app.name:
-                    app_name = app.name.lower()
-                    
-                    # Try exact match first
-                    if app_name in running_windows:
-                        instances = running_windows[app_name]
-                        matched_class = app_name
-                    
-                # If we're using a dict app_data, try matching with its window_class
-                if not instances and isinstance(app_data, dict) and "window_class" in app_data and app_data["window_class"] is not None:
-                    dict_class = app_data["window_class"].lower()
-                    
-                    # Try exact match first
-                    if dict_class in running_windows:
-                        instances = running_windows[dict_class]
-                        matched_class = dict_class
+                # Try normalized version
+                normalized = self._normalize_window_class(identifier)
+                if normalized in running_windows:
+                    instances = running_windows[normalized]
+                    matched_class = normalized
+                    break
+                
+                # Try substring matching for window classes (less reliable but helpful)
+                for window_class in running_windows:
+                    # For substring matching, ensure the identifier is at least 3 chars
+                    # to avoid too broad matches
+                    if len(identifier) >= 3 and identifier in window_class:
+                        instances = running_windows[window_class]
+                        matched_class = window_class
+                        logging.debug(f"Substring match: {identifier} in {window_class}")
+                        break
+                
+                if matched_class:
+                    break
             
             # Mark the matched class as used
             if matched_class:
                 used_window_classes.add(matched_class)
+                # Also mark the normalized version as used
+                used_window_classes.add(self._normalize_window_class(matched_class))
+                logging.debug(f"Matched pinned app {app_data} to running instances via {matched_class}")
             
             # Create button for this pinned app with any found instances
             pinned_buttons.append(self.create_button(app_data, instances))
@@ -653,7 +683,7 @@ class Dock(Window):
         if self.is_hovered or self._drag_in_progress:
             self.wrapper.remove_style_class("occluded")
             return True
-        occlusion_region = (0, data.CURRENT_HEIGHT - 80, data.CURRENT_WIDTH, 80)
+        occlusion_region = (0, data.CURRENT_HEIGHT - OCCLUSION, data.CURRENT_WIDTH, OCCLUSION)
         if check_occlusion(occlusion_region) or not self.view.get_children():
             self.wrapper.add_style_class("occluded")
         else:

@@ -7,7 +7,7 @@
 }
 
 #dock.occluded {
-  margin-bottom: -64px;
+  @apply dock_nmargin();
   opacity: 0;
 }
 

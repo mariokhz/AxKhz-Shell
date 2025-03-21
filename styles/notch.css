@@ -42,7 +42,7 @@
 
 #notch-content.tools {
   min-height: 84px;
-  min-width: 364px;
+  min-width: 580px;
   border-radius: 0 0 36px 36px;
 }
 
@@ -127,6 +127,10 @@
 }
 
 #hyprland-window label {
-  margin: 0px 0px;
+  margin: 0px 8px;
+}
+
+#active-window-box {
+  margin: 10px;
 }
 

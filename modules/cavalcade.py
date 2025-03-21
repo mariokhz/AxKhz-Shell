@@ -1,4 +1,3 @@
-# Standard library imports
 import os
 import struct
 import subprocess
@@ -6,12 +5,10 @@ import re
 import ctypes
 import signal
 
-# Third-party imports
 from gi.repository import GLib, Gtk, Gdk
 from loguru import logger
 from math import pi
 
-# Fabric imports
 from fabric.widgets.overlay import Overlay
 from fabric.utils.helpers import get_relative_path
 
