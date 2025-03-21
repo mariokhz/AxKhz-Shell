@@ -122,8 +122,8 @@ class Bar(Window):
                 orientation="h",
                 spacing=4,
                 children=[
-                    self.control,
                     self.metrics,
+                    self.control
                     
                 ],
             ),
@@ -181,8 +181,9 @@ class Bar(Window):
                 spacing=4,
                 orientation="h",
                 children=[
-                    self.boxed_revealer_right,
                     self.battery,
+                    self.boxed_revealer_right,
+                    
                     #self.updates,
                     self.systray,
                     self.button_tools,
