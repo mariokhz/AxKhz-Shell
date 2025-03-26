@@ -21,6 +21,9 @@ import config.data as data
 from services.network import NetworkClient
 import time
 
+angle_start = 90 + 30
+angle_end = 90 - 30 + 360
+
 class MetricsProvider:
     """
     Class responsible for obtaining centralized CPU, memory, disk usage, and battery metrics.
@@ -193,8 +196,8 @@ class MetricsSmall(Button):
             value=0,
             size=28,
             line_width=2,
-            start_angle=150,
-            end_angle=390,
+            start_angle=angle_start,
+            end_angle=angle_end,
             style_classes="cpu",
             child=self.cpu_icon,
         )
@@ -220,8 +223,8 @@ class MetricsSmall(Button):
             value=0,
             size=28,
             line_width=2,
-            start_angle=150,
-            end_angle=390,
+            start_angle=angle_start,
+            end_angle=angle_end,
             style_classes="ram",
             child=self.ram_icon,
         )
@@ -247,8 +250,8 @@ class MetricsSmall(Button):
             value=0,
             size=28,
             line_width=2,
-            start_angle=150,
-            end_angle=390,
+            start_angle=angle_start,
+            end_angle=angle_end,
             style_classes="disk",
             child=self.disk_icon,
         )
@@ -356,8 +359,8 @@ class Battery(Button):
             value=0,
             size=28,
             line_width=2,
-            start_angle=150,
-            end_angle=390,
+            start_angle=angle_start,
+            end_angle=angle_end,
             style_classes="bat",
             child=self.bat_icon,
         )

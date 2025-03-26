@@ -14,6 +14,9 @@ from fabric.audio.service import Audio
 from fabric.widgets.scale import Scale
 from services.brightness import Brightness
 
+angle_start = 90 + 30
+angle_end = 90 - 30 + 360
+
 class VolumeSlider(Scale):
     def __init__(self, **kwargs):
         super().__init__(
@@ -167,7 +170,7 @@ class BrightnessSmall(Box):
 
         self.progress_bar = CircularProgressBar(
             name="button-brightness", size=28, line_width=2,
-            start_angle=150, end_angle=390,
+            start_angle=angle_start, end_angle=angle_end,
         )
         self.brightness_label = Label(name="brightness-label", markup=icons.brightness_high)
         self.brightness_button = Button(child=self.brightness_label)
@@ -250,7 +253,7 @@ class VolumeSmall(Box):
         self.audio = Audio()
         self.progress_bar = CircularProgressBar(
             name="button-volume", size=28, line_width=2,
-            start_angle=150, end_angle=390,
+            start_angle=angle_start, end_angle=angle_end,
         )
         self.vol_label = Label(name="vol-label", markup=icons.vol_high)
         self.vol_button = Button(on_clicked=self.toggle_mute, child=self.vol_label)
@@ -296,23 +299,42 @@ class VolumeSmall(Box):
     def on_speaker_changed(self, *_):
         if not self.audio.speaker:
             return
+        
+        self.progress_bar.value = self.audio.speaker.volume / 100
+        vol_high_icon = icons.vol_high
+        vol_medium_icon = icons.vol_medium
+        vol_mute_icon = icons.vol_mute
+        vol_off_icon = icons.vol_off
+
+        if "bluetooth" in self.audio.speaker.icon_name:
+            vol_high_icon = icons.bluetooth_connected
+            vol_medium_icon = icons.bluetooth
+            vol_mute_icon = icons.bluetooth_disconnected
+            vol_off_icon = icons.bluetooth_disconnected
+
         if self.audio.speaker.muted:
-            self.vol_button.get_child().set_markup(icons.vol_off)
+            self.vol_button.get_child().set_markup(vol_off_icon)
+            self.progress_bar.remove_style_class("zero")
+            self.vol_label.remove_style_class("zero")
             self.progress_bar.add_style_class("muted")
             self.vol_label.add_style_class("muted")
             self.set_tooltip_text("0%")
             return
         else:
+            self.vol_label.remove_style_class("zero")
+            self.progress_bar.remove_style_class("zero")
             self.progress_bar.remove_style_class("muted")
             self.vol_label.remove_style_class("muted")
         self.set_tooltip_text(f"{round(self.audio.speaker.volume)}%")
         self.progress_bar.value = self.audio.speaker.volume / 100
         if self.audio.speaker.volume > 74:
-            self.vol_button.get_child().set_markup(icons.vol_high)
-        elif self.audio.speaker.volume > 0:
-            self.vol_button.get_child().set_markup(icons.vol_medium)
+            self.vol_button.get_child().set_markup(vol_high_icon)
+        elif self.audio.speaker.volume > 5:
+            self.vol_button.get_child().set_markup(vol_medium_icon)
         else:
-            self.vol_button.get_child().set_markup(icons.vol_mute)
+            self.vol_button.get_child().set_markup(vol_mute_icon)
+            self.vol_label.add_style_class("zero")
+            self.progress_bar.add_style_class("zero")
 
 class MicSmall(Box):
     def __init__(self, **kwargs):
@@ -320,7 +342,7 @@ class MicSmall(Box):
         self.audio = Audio()
         self.progress_bar = CircularProgressBar(
             name="button-mic", size=28, line_width=2,
-            start_angle=150, end_angle=390,
+            start_angle=angle_start, end_angle=angle_end,
         )
         self.mic_label = Label(name="mic-label", markup=icons.mic)
         self.mic_button = Button(on_clicked=self.toggle_mute, child=self.mic_label)
