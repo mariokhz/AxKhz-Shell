@@ -25,6 +25,11 @@ from fabric.utils.helpers import get_desktop_applications
 from fabric.widgets.image import Image
 from utils.occlusion import check_occlusion
 
+def truncate_title(title):
+    parts = title.rsplit(' - ', 1)
+    if len(parts) == 1:
+        parts = title.rsplit(' — ', 1)
+    return parts[0] if len(parts) > 1 else title
 
 class Notch(Window):
     def __init__(self, **kwargs):
@@ -32,7 +37,7 @@ class Notch(Window):
             name="notch",
             layer="top",
             anchor="top",
-            margin="-40px 0px 0px 0px" if not data.VERTICAL else "0px 0px 0px 0px",
+            margin="-41px 0px 0px 0px" if not data.VERTICAL else "0px 0px 0px 0px",
             
             keyboard_mode="none",
             exclusivity="none",
@@ -85,15 +90,16 @@ class Notch(Window):
             h_expand=True,
             h_align="fill",
             formatter=FormattedString(
-                f"{{'Desktop' if not win_title or win_title == 'unknown' else truncate(win_title, 64)}}",
+                f"{{'Desktop' if not win_title or win_title == 'unknown' else truncate(truncate_title(win_title), 64)}}",
                 truncate=truncate,
+                truncate_title = truncate_title,
             ),
         )
         
         self.active_window_box = CenterBox(
             name="active-window-box",
             h_expand=True,
-            h_align="fill",
+            h_align="center",
             start_children=self.window_icon,
             center_children=self.active_window,
             end_children=None
