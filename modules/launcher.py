@@ -491,7 +491,7 @@ class AppLauncher(Box):
             result = parts[1].strip()
             
             # For very long results, truncate for display but keep full in tooltip
-            display_text = text
+            display_text = text[1:]
             if len(result) > 50:  # Truncate long results
                 display_text = f"{expression} => {result[:47]}..."
                 
