@@ -267,6 +267,8 @@ class Notch(Window):
         
         self.update_window_icon()
         
+        self.active_window.connect("button-press-event", lambda widget, event: (self.open_notch("dashboard"), False)[1])
+        
         # Track current window class
         self._current_window_class = self._get_current_window_class()
         

@@ -23,6 +23,7 @@ class VolumeSlider(Scale):
             name="control-slider",
             orientation="h",
             h_expand=True,
+            h_align="fill",
             has_origin=True,
             increments=(0.01, 0.1),
             **kwargs,
@@ -48,6 +49,12 @@ class VolumeSlider(Scale):
         if not self.audio.speaker:
             return
         self.value = self.audio.speaker.volume / 100
+        
+        # Apply muted class when speaker is muted
+        if self.audio.speaker.muted:
+            self.add_style_class("muted")
+        else:
+            self.remove_style_class("muted")
 
 class MicSlider(Scale):
     def __init__(self, **kwargs):
@@ -80,6 +87,12 @@ class MicSlider(Scale):
         if not self.audio.microphone:
             return
         self.value = self.audio.microphone.volume / 100
+        
+        # Apply muted class when microphone is muted
+        if self.audio.microphone.muted:
+            self.add_style_class("muted")
+        else:
+            self.remove_style_class("muted")
 
 class BrightnessSlider(Scale):
     def __init__(self, **kwargs):
@@ -404,27 +417,265 @@ class MicSmall(Box):
         else:
             self.mic_button.get_child().set_markup(icons.mic_mute)
 
+class BrightnessIcon(Box):
+    def __init__(self, **kwargs):
+        super().__init__(name="brightness-icon", **kwargs)
+        self.brightness = Brightness.get_initial()
+        if self.brightness.screen_brightness == -1:
+            self.destroy()
+            return
+            
+        self.brightness_label = Label(name="brightness-label-dash", markup=icons.brightness_high, h_align="center", v_align="center", h_expand=True, v_expand=True)
+        self.brightness_button = Button(child=self.brightness_label, h_align="center", v_align="center", h_expand=True, v_expand=True)
+        
+        # Wrap the button in an EventBox for scroll events - add alignment properties here
+        self.event_box = EventBox(
+            events=["scroll", "smooth-scroll"],
+            child=self.brightness_button,
+            h_align="center", 
+            v_align="center", 
+            h_expand=True, 
+            v_expand=True
+        )
+        self.event_box.connect("scroll-event", self.on_scroll)
+        self.add(self.event_box)
+        
+        self.brightness.connect("screen", self.on_brightness_changed)
+        self.on_brightness_changed()
+        self.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.SMOOTH_SCROLL_MASK)
+    
+    def on_scroll(self, _, event):
+        if self.brightness.max_screen == -1:
+            return
+            
+        step_size = 5
+        current_brightness = self.brightness.screen_brightness
+        
+        if event.direction == Gdk.ScrollDirection.SMOOTH:
+            if event.delta_y < 0:
+                new_brightness = min(current_brightness + step_size, self.brightness.max_screen)
+            elif event.delta_y > 0:
+                new_brightness = max(current_brightness - step_size, 0)
+            else:
+                return
+        else:
+            if event.direction == Gdk.ScrollDirection.UP:
+                new_brightness = min(current_brightness + step_size, self.brightness.max_screen)
+            elif event.direction == Gdk.ScrollDirection.DOWN:
+                new_brightness = max(current_brightness - step_size, 0)
+            else:
+                return
+                
+        self.brightness.screen_brightness = new_brightness
+    
+    def on_brightness_changed(self, *args):
+        if self.brightness.max_screen == -1:
+            return
+            
+        normalized = self.brightness.screen_brightness / self.brightness.max_screen
+        brightness_percentage = int(normalized * 100)
+        
+        if brightness_percentage >= 75:
+            self.brightness_label.set_markup(icons.brightness_high)
+        elif brightness_percentage >= 24:
+            self.brightness_label.set_markup(icons.brightness_medium)
+        else:
+            self.brightness_label.set_markup(icons.brightness_low)
+        self.set_tooltip_text(f"{brightness_percentage}%")
+
+class VolumeIcon(Box):
+    def __init__(self, **kwargs):
+        super().__init__(name="vol-icon", **kwargs)
+        self.audio = Audio()
+        
+        self.vol_label = Label(name="vol-label-dash", markup=icons.vol_high, h_align="center", v_align="center", h_expand=True, v_expand=True)
+        self.vol_button = Button(on_clicked=self.toggle_mute, child=self.vol_label, h_align="center", v_align="center", h_expand=True, v_expand=True)
+        
+        # Wrap the button in an EventBox for scroll events - add alignment properties here
+        self.event_box = EventBox(
+            events=["scroll", "smooth-scroll"],
+            child=self.vol_button,
+            h_align="center", 
+            v_align="center", 
+            h_expand=True, 
+            v_expand=True
+        )
+        self.event_box.connect("scroll-event", self.on_scroll)
+        self.add(self.event_box)
+        
+        self.audio.connect("notify::speaker", self.on_new_speaker)
+        if self.audio.speaker:
+            self.audio.speaker.connect("changed", self.on_speaker_changed)
+        self.on_speaker_changed()
+        self.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.SMOOTH_SCROLL_MASK)
+        
+    def on_scroll(self, _, event):
+        if not self.audio.speaker:
+            return
+            
+        if event.direction == Gdk.ScrollDirection.SMOOTH:
+            if abs(event.delta_y) > 0:
+                self.audio.speaker.volume -= event.delta_y
+            if abs(event.delta_x) > 0:
+                self.audio.speaker.volume += event.delta_x
+        else:
+            if event.direction == Gdk.ScrollDirection.UP:
+                self.audio.speaker.volume = min(self.audio.speaker.volume + 5, 100)
+            elif event.direction == Gdk.ScrollDirection.DOWN:
+                self.audio.speaker.volume = max(self.audio.speaker.volume - 5, 0)
+            
+    def on_new_speaker(self, *args):
+        if self.audio.speaker:
+            self.audio.speaker.connect("changed", self.on_speaker_changed)
+            self.on_speaker_changed()
+            
+    def toggle_mute(self, event):
+        current_stream = self.audio.speaker
+        if current_stream:
+            current_stream.muted = not current_stream.muted
+            if current_stream.muted:
+                self.vol_button.get_child().set_markup(icons.vol_off)
+                self.vol_label.add_style_class("muted")
+                self.vol_button.add_style_class("muted")
+            else:
+                self.on_speaker_changed()
+                self.vol_label.remove_style_class("muted")
+                self.vol_button.remove_style_class("muted")
+                
+    def on_speaker_changed(self, *_):
+        if not self.audio.speaker:
+            return
+        if self.audio.speaker.muted:
+            self.vol_button.get_child().set_markup(icons.vol_off)
+            self.add_style_class("muted")
+            self.vol_label.add_style_class("muted")
+            self.set_tooltip_text("Muted")
+            return
+        else:
+            self.remove_style_class("muted")
+            self.vol_label.remove_style_class("muted")
+            
+        self.set_tooltip_text(f"{round(self.audio.speaker.volume)}%")
+        if self.audio.speaker.volume > 74:
+            self.vol_button.get_child().set_markup(icons.vol_high)
+        elif self.audio.speaker.volume > 0:
+            self.vol_button.get_child().set_markup(icons.vol_medium)
+        else:
+            self.vol_button.get_child().set_markup(icons.vol_mute)
+
+class MicIcon(Box):
+    def __init__(self, **kwargs):
+        super().__init__(name="mic-icon", **kwargs)
+        self.audio = Audio()
+        
+        self.mic_label = Label(name="mic-label-dash", markup=icons.mic, h_align="center", v_align="center", h_expand=True, v_expand=True)
+        self.mic_button = Button(on_clicked=self.toggle_mute, child=self.mic_label, h_align="center", v_align="center", h_expand=True, v_expand=True)
+        
+        # Wrap the button in an EventBox for scroll events - add alignment properties here
+        self.event_box = EventBox(
+            events=["scroll", "smooth-scroll"],
+            child=self.mic_button,
+            h_align="center", 
+            v_align="center", 
+            h_expand=True, 
+            v_expand=True
+        )
+        self.event_box.connect("scroll-event", self.on_scroll)
+        self.add(self.event_box)
+        
+        self.audio.connect("notify::microphone", self.on_new_microphone)
+        if self.audio.microphone:
+            self.audio.microphone.connect("changed", self.on_microphone_changed)
+        self.on_microphone_changed()
+        self.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.SMOOTH_SCROLL_MASK)
+        
+    def on_scroll(self, _, event):
+        if not self.audio.microphone:
+            return
+            
+        if event.direction == Gdk.ScrollDirection.SMOOTH:
+            if abs(event.delta_y) > 0:
+                self.audio.microphone.volume -= event.delta_y
+            if abs(event.delta_x) > 0:
+                self.audio.microphone.volume += event.delta_x
+        else:
+            if event.direction == Gdk.ScrollDirection.UP:
+                self.audio.microphone.volume = min(self.audio.microphone.volume + 5, 100)
+            elif event.direction == Gdk.ScrollDirection.DOWN:
+                self.audio.microphone.volume = max(self.audio.microphone.volume - 5, 0)
+            
+    def on_new_microphone(self, *args):
+        if self.audio.microphone:
+            self.audio.microphone.connect("changed", self.on_microphone_changed)
+            self.on_microphone_changed()
+            
+    def toggle_mute(self, event):
+        current_stream = self.audio.microphone
+        if current_stream:
+            current_stream.muted = not current_stream.muted
+            if current_stream.muted:
+                self.mic_button.get_child().set_markup(icons.mic_mute)
+                self.mic_label.add_style_class("muted")
+                self.mic_button.add_style_class("muted")
+            else:
+                self.on_microphone_changed()
+                self.mic_label.remove_style_class("muted")
+                self.mic_button.remove_style_class("muted")
+                
+    def on_microphone_changed(self, *_):
+        if not self.audio.microphone:
+            return
+        if self.audio.microphone.muted:
+            self.mic_button.get_child().set_markup(icons.mic_mute)
+            self.add_style_class("muted")
+            self.mic_label.add_style_class("muted")
+            self.set_tooltip_text("Muted")
+            return
+        else:
+            self.remove_style_class("muted")
+            self.mic_label.remove_style_class("muted")
+            
+        self.set_tooltip_text(f"{round(self.audio.microphone.volume)}%")
+        if self.audio.microphone.volume >= 1:
+            self.mic_button.get_child().set_markup(icons.mic)
+        else:
+            self.mic_button.get_child().set_markup(icons.mic_mute)
+
 class ControlSliders(Box):
     def __init__(self, **kwargs):
-        brightness = Brightness.get_initial()
-        children = []
-        if brightness.screen_brightness != -1:
-            children.append(BrightnessSlider())
-        children.extend([VolumeSlider(), MicSlider()])
         super().__init__(
             name="control-sliders",
             orientation="h",
-            spacing=4,
-            children=children,
+            spacing=8,
             **kwargs,
         )
+        
+        brightness = Brightness.get_initial()
+        
+        # Create all slider containers with icons
+        if (brightness.screen_brightness != -1):
+            brightness_row = Box(orientation="h", spacing=4, h_expand=True, h_align="fill")
+            brightness_row.add(BrightnessIcon())
+            brightness_row.add(BrightnessSlider())  # Removed h_expand=True
+            self.add(brightness_row)
+            
+        volume_row = Box(orientation="h", spacing=4, h_expand=True, h_align="fill")
+        volume_row.add(VolumeIcon())
+        volume_row.add(VolumeSlider())  # Removed h_expand=True
+        self.add(volume_row)
+        
+        mic_row = Box(orientation="h", spacing=4, h_expand=True, h_align="fill")
+        mic_row.add(MicIcon())
+        mic_row.add(MicSlider())  # Removed h_expand=True
+        self.add(mic_row)
+        
         self.show_all()
 
 class ControlSmall(Box):
     def __init__(self, **kwargs):
         brightness = Brightness.get_initial()
         children = []
-        if brightness.screen_brightness != -1:
+        if (brightness.screen_brightness != -1):
             children.append(BrightnessSmall())
         children.extend([VolumeSmall(), MicSmall()])
         super().__init__(

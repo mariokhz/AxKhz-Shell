@@ -26,7 +26,7 @@ source = ~/.config/{APP_NAME_CAP}/config/hypr/{APP_NAME}.conf
 """
 
 # Initialize bind_vars with default values
-DEFAULT_KEYBINDINGS = {
+DEFAULTS = {
     'prefix_restart': "SUPER ALT",
     'suffix_restart': "B",
     'prefix_axmsg': "SUPER",
@@ -67,7 +67,7 @@ DEFAULT_KEYBINDINGS = {
     'dock_icon_size': 28,  # Default dock icon size
 }
 
-bind_vars = DEFAULT_KEYBINDINGS.copy()
+bind_vars = DEFAULTS.copy()
 
 
 def deep_update(target: dict, update: dict) -> dict:
@@ -954,7 +954,7 @@ uwsm-app "$python_output" &
         if response == Gtk.ResponseType.YES:
             # Reset bind_vars to default values
             global bind_vars
-            bind_vars = DEFAULT_KEYBINDINGS.copy()
+            bind_vars = DEFAULTS.copy()
             
             # Update UI elements
             # Update key binding entries
