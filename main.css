@@ -24,7 +24,7 @@
 * {
   all: unset;
   color: var(--foreground);
-  font-size: 11pt;
-  font-family: "Zed Sans";
+  font-size: 10pt;
+  font-family: "Cantarell Bold";
   border-radius: 16px;
 }
