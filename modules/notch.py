@@ -90,7 +90,7 @@ class Notch(Window):
             h_expand=True,
             h_align="fill",
             formatter=FormattedString(
-                f"{{'Desktop' if not win_title or win_title == 'unknown' else truncate(truncate_title(win_title), 64)}}",
+                f"{{'Escritorio' if not win_title or win_title == 'unknown' else truncate(truncate_title(win_title), 64)}}",
                 truncate=truncate,
                 truncate_title = truncate_title,
             ),
@@ -753,7 +753,7 @@ class Notch(Window):
             
         # Get window title
         title = label_widget.get_text()
-        if title == 'Desktop' or not title:
+        if title == 'Escritorio' or not title:
             # If on desktop, hide icon completely
             self.window_icon.set_visible(False)
             return

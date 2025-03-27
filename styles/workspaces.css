@@ -25,7 +25,7 @@
 }
 
 #workspaces>button.urgent {
-  background-color: var(--error_dim);
+  background-color: var(--error-dim);
 }
 
 #workspaces>button.active {

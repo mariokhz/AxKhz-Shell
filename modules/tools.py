@@ -11,6 +11,7 @@ from loguru import logger
 
 SCREENSHOT_SCRIPT = get_relative_path("../scripts/screenshot.sh")
 OCR_SCRIPT = get_relative_path("../scripts/ocr.sh")
+LATEX_OCR_SCRIPT = get_relative_path("../scripts/latexocr.sh")
 GAMEMODE_SCRIPT = get_relative_path("../scripts/gamemode.sh")
 SCREENRECORD_SCRIPT = get_relative_path("../scripts/screenrecord.sh")
 
@@ -70,6 +71,16 @@ class Toolbox(Box):
             name="toolbox-button",
             child=Label(name="button-label", markup=icons.ocr),
             on_clicked=self.ocr,
+            h_expand=False,
+            v_expand=False,
+            h_align="center",
+            v_align="center",
+        )
+
+        self.btn_latexocr = Button(
+            name="toolbox-button",
+            child=Label(name="button-label", markup=icons.latex_ocr),
+            on_clicked=self.latex_ocr,
             h_expand=False,
             v_expand=False,
             h_align="center",
@@ -144,6 +155,7 @@ class Toolbox(Box):
             self.btn_recordings_folder,
             Box(name="tool-sep", h_expand=False, v_expand=False, h_align="center", v_align="center"),
             self.btn_ocr,
+            self.btn_latexocr,
             self.btn_color,
             Box(name="tool-sep", h_expand=False, v_expand=False, h_align="center", v_align="center"),
             self.btn_gamemode,
@@ -220,6 +232,10 @@ class Toolbox(Box):
 
     def ocr(self, *args):
         exec_shell_command_async(f"bash {OCR_SCRIPT} sf")
+        self.close_menu()
+
+    def latex_ocr(self, *args):
+        exec_shell_command_async(f"bash {LATEX_OCR_SCRIPT}")
         self.close_menu()
 
     def gamemode(self, *args):
