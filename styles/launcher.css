@@ -134,13 +134,15 @@
   color: var(--primary);
 }
 
-#calc-label {
-  font-family: 'Fira Code';
-  font-weight: bold;
-  font-size: 13px;
-}
 #app-desc {
   color: var(--outline);
   font-size: 12px;
   font-style: italic;
 }
+
+#calc-label {
+  font-family: 'Fira Code';
+  font-weight: bold;
+  font-size: 13px;
+}
+
