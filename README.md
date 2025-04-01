@@ -106,32 +106,34 @@ curl -fsSL https://raw.githubusercontent.com/Axenide/Ax-Shell/main/install.sh | 
 <h2><sub><img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Rocket.png" alt="Rocket" width="25" height="25" /></sub> Roadmap</h2>
 
 - [x] App Launcher
+- [x] Bluetooth Manager
 - [x] Calculator
-- [x] Power Menu
-- [x] Dock
-- [x] Emoji Picker
-- [x] Wallpaper Selector
-- [x] System Tray
-- [x] Notifications
-- [x] Terminal
-- [x] Pins
-- [x] Kanban Board
 - [x] Calendar
 - [x] Color Picker
+- [x] Customizable UI
 - [x] Dashboard
-- [x] Bluetooth Manager
-- [x] Power Manager
-- [x] Settings
-- [x] Screenshot
-- [x] Screen Recorder
+- [x] Dock
+- [x] Emoji Picker
+- [x] Kanban Board
+- [x] Notifications
 - [x] OCR
-- [x] Workspaces Overview
-- [x] Vertical Layout
+- [x] Pins
+- [x] Power Manager
+- [x] Power Menu
+- [x] Screen Recorder
+- [x] Screenshot
+- [x] Settings
+- [x] System Tray
+- [x] Terminal
 - [x] Tmux Session Manager
-- [ ] Network Manager
+- [x] Vertical Layout
+- [x] Wallpaper Selector
+- [x] Workspaces Overview
 - [ ] Clipboard Manager
-- [ ] Multimodal AI Assistant
 - [ ] Multi-monitor support
+- [ ] Multimodal AI Assistant
+- [ ] Network Manager
+- [ ] OTP Manager
 
 ---
 

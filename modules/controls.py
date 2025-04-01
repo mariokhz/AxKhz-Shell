@@ -331,7 +331,7 @@ class VolumeSmall(Box):
             self.vol_label.remove_style_class("zero")
             self.progress_bar.add_style_class("muted")
             self.vol_label.add_style_class("muted")
-            self.set_tooltip_text("0%")
+            self.set_tooltip_text("Muted")
             return
         else:
             self.vol_label.remove_style_class("zero")
@@ -405,7 +405,7 @@ class MicSmall(Box):
             self.mic_button.get_child().set_markup(icons.mic_mute)
             self.progress_bar.add_style_class("muted")
             self.mic_label.add_style_class("muted")
-            self.set_tooltip_text("0%")
+            self.set_tooltip_text("Muted")
             return
         else:
             self.progress_bar.remove_style_class("muted")
@@ -440,6 +440,10 @@ class BrightnessIcon(Box):
         self.event_box.connect("scroll-event", self.on_scroll)
         self.add(self.event_box)
         
+        self._pending_value = None
+        self._update_source_id = None
+        self._updating_from_brightness = False
+        
         self.brightness.connect("screen", self.on_brightness_changed)
         self.on_brightness_changed()
         self.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.SMOOTH_SCROLL_MASK)
@@ -465,13 +469,25 @@ class BrightnessIcon(Box):
                 new_brightness = max(current_brightness - step_size, 0)
             else:
                 return
-                
-        self.brightness.screen_brightness = new_brightness
+        
+        self._pending_value = new_brightness
+        if self._update_source_id is None:
+            self._update_source_id = GLib.timeout_add(50, self._update_brightness_callback)
+    
+    def _update_brightness_callback(self):
+        if self._pending_value is not None and self._pending_value != self.brightness.screen_brightness:
+            self.brightness.screen_brightness = self._pending_value
+            self._pending_value = None
+            return True
+        else:
+            self._update_source_id = None
+            return False
     
     def on_brightness_changed(self, *args):
         if self.brightness.max_screen == -1:
             return
             
+        self._updating_from_brightness = True
         normalized = self.brightness.screen_brightness / self.brightness.max_screen
         brightness_percentage = int(normalized * 100)
         
@@ -482,6 +498,12 @@ class BrightnessIcon(Box):
         else:
             self.brightness_label.set_markup(icons.brightness_low)
         self.set_tooltip_text(f"{brightness_percentage}%")
+        self._updating_from_brightness = False
+        
+    def destroy(self):
+        if self._update_source_id is not None:
+            GLib.source_remove(self._update_source_id)
+        super().destroy()
 
 class VolumeIcon(Box):
     def __init__(self, **kwargs):
@@ -503,6 +525,9 @@ class VolumeIcon(Box):
         self.event_box.connect("scroll-event", self.on_scroll)
         self.add(self.event_box)
         
+        self._pending_value = None
+        self._update_source_id = None
+        
         self.audio.connect("notify::speaker", self.on_new_speaker)
         if self.audio.speaker:
             self.audio.speaker.connect("changed", self.on_speaker_changed)
@@ -513,16 +538,36 @@ class VolumeIcon(Box):
         if not self.audio.speaker:
             return
             
+        step_size = 5
+        current_volume = self.audio.speaker.volume
+        
         if event.direction == Gdk.ScrollDirection.SMOOTH:
-            if abs(event.delta_y) > 0:
-                self.audio.speaker.volume -= event.delta_y
-            if abs(event.delta_x) > 0:
-                self.audio.speaker.volume += event.delta_x
+            if event.delta_y < 0:
+                new_volume = min(current_volume + step_size, 100)
+            elif event.delta_y > 0:
+                new_volume = max(current_volume - step_size, 0)
+            else:
+                return
         else:
             if event.direction == Gdk.ScrollDirection.UP:
-                self.audio.speaker.volume = min(self.audio.speaker.volume + 5, 100)
+                new_volume = min(current_volume + step_size, 100)
             elif event.direction == Gdk.ScrollDirection.DOWN:
-                self.audio.speaker.volume = max(self.audio.speaker.volume - 5, 0)
+                new_volume = max(current_volume - step_size, 0)
+            else:
+                return
+                
+        self._pending_value = new_volume
+        if self._update_source_id is None:
+            self._update_source_id = GLib.timeout_add(50, self._update_volume_callback)
+            
+    def _update_volume_callback(self):
+        if self._pending_value is not None and self._pending_value != self.audio.speaker.volume:
+            self.audio.speaker.volume = self._pending_value
+            self._pending_value = None
+            return True
+        else:
+            self._update_source_id = None
+            return False
             
     def on_new_speaker(self, *args):
         if self.audio.speaker:
@@ -562,6 +607,11 @@ class VolumeIcon(Box):
             self.vol_button.get_child().set_markup(icons.vol_medium)
         else:
             self.vol_button.get_child().set_markup(icons.vol_mute)
+            
+    def destroy(self):
+        if self._update_source_id is not None:
+            GLib.source_remove(self._update_source_id)
+        super().destroy()
 
 class MicIcon(Box):
     def __init__(self, **kwargs):
@@ -583,6 +633,9 @@ class MicIcon(Box):
         self.event_box.connect("scroll-event", self.on_scroll)
         self.add(self.event_box)
         
+        self._pending_value = None
+        self._update_source_id = None
+        
         self.audio.connect("notify::microphone", self.on_new_microphone)
         if self.audio.microphone:
             self.audio.microphone.connect("changed", self.on_microphone_changed)
@@ -593,16 +646,36 @@ class MicIcon(Box):
         if not self.audio.microphone:
             return
             
+        step_size = 5
+        current_volume = self.audio.microphone.volume
+        
         if event.direction == Gdk.ScrollDirection.SMOOTH:
-            if abs(event.delta_y) > 0:
-                self.audio.microphone.volume -= event.delta_y
-            if abs(event.delta_x) > 0:
-                self.audio.microphone.volume += event.delta_x
+            if event.delta_y < 0:
+                new_volume = min(current_volume + step_size, 100)
+            elif event.delta_y > 0:
+                new_volume = max(current_volume - step_size, 0)
+            else:
+                return
         else:
             if event.direction == Gdk.ScrollDirection.UP:
-                self.audio.microphone.volume = min(self.audio.microphone.volume + 5, 100)
+                new_volume = min(current_volume + step_size, 100)
             elif event.direction == Gdk.ScrollDirection.DOWN:
-                self.audio.microphone.volume = max(self.audio.microphone.volume - 5, 0)
+                new_volume = max(current_volume - step_size, 0)
+            else:
+                return
+                
+        self._pending_value = new_volume
+        if self._update_source_id is None:
+            self._update_source_id = GLib.timeout_add(50, self._update_volume_callback)
+            
+    def _update_volume_callback(self):
+        if self._pending_value is not None and self._pending_value != self.audio.microphone.volume:
+            self.audio.microphone.volume = self._pending_value
+            self._pending_value = None
+            return True
+        else:
+            self._update_source_id = None
+            return False
             
     def on_new_microphone(self, *args):
         if self.audio.microphone:
@@ -640,6 +713,11 @@ class MicIcon(Box):
             self.mic_button.get_child().set_markup(icons.mic)
         else:
             self.mic_button.get_child().set_markup(icons.mic_mute)
+            
+    def destroy(self):
+        if self._update_source_id is not None:
+            GLib.source_remove(self._update_source_id)
+        super().destroy()
 
 class ControlSliders(Box):
     def __init__(self, **kwargs):
