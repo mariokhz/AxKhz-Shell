@@ -65,6 +65,7 @@ curl -fsSL https://raw.githubusercontent.com/Axenide/Ax-Shell/main/install.sh | 
     - [Matugen](https://github.com/InioX/matugen)
     - `brightnessctl`
     - `cava`
+    - `cliphist`
     - `gnome-bluetooth-3.0`
     - `gobject-introspection`
     - `gpu-screen-recorder`
@@ -109,6 +110,7 @@ curl -fsSL https://raw.githubusercontent.com/Axenide/Ax-Shell/main/install.sh | 
 - [x] Bluetooth Manager
 - [x] Calculator
 - [x] Calendar
+- [x] Clipboard Manager
 - [x] Color Picker
 - [x] Customizable UI
 - [x] Dashboard
@@ -129,7 +131,6 @@ curl -fsSL https://raw.githubusercontent.com/Axenide/Ax-Shell/main/install.sh | 
 - [x] Vertical Layout
 - [x] Wallpaper Selector
 - [x] Workspaces Overview
-- [ ] Clipboard Manager
 - [ ] Multi-monitor support
 - [ ] Multimodal AI Assistant
 - [ ] Network Manager

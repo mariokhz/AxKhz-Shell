@@ -70,10 +70,10 @@ class Bar(Window):
 
         self.lang_label = Label(name="lang-label")
         self.language = Button(name="language", h_align="center", v_align="center", child=self.lang_label)
-        self.switch_on_start()
+        self.on_language_switch()
         self.connection.connect("event::activelayout", self.on_language_switch)
 
-        self.date_time = DateTime(name="date-time", formatters=["%H:%M"] if not data.VERTICAL else ["%H\n%M"], h_align="center" if not data.VERTICAL else "fill", v_align="center", h_expand=True, v_expand=True)
+        self.date_time = DateTime(name="date-time", formatters=["%H:%M:%S"] if not data.VERTICAL else ["%H\n%M"], h_align="center" if not data.VERTICAL else "fill", v_align="center", h_expand=True, v_expand=True)
 
         self.button_apps = Button(
             name="button-bar",
@@ -328,22 +328,15 @@ class Bar(Window):
     def tools_menu(self):
         self.notch.open_notch("tools")
 
-    def on_language_switch(self, _, event: HyprlandEvent):
-        self.language.set_tooltip_text(Language().get_label())
+    def on_language_switch(self, _=None, event: HyprlandEvent=None):
+        lang = event.data[1] if event else Language().get_label()
+        self.language.set_tooltip_text(lang)
         if not data.VERTICAL:
-            self.lang_label.set_label(Language().get_label()[0:3].upper())
+            self.lang_label.set_label(lang[:3].upper())
         else:
             self.lang_label.add_style_class("icon")
             self.lang_label.set_markup(icons.keyboard)
-
-    def switch_on_start(self):
-        self.language.set_tooltip_text(Language().get_label())
-        if not data.VERTICAL:
-            self.lang_label.set_label(Language().get_label()[0:3].upper())
-        else:
-            self.lang_label.add_style_class("icon")
-            self.lang_label.set_markup(icons.keyboard)
-
+            
     def toggle_hidden(self):
         self.hidden = not self.hidden
         if self.hidden:
