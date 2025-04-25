@@ -47,9 +47,13 @@
 }
 
 #vol-label,
-#mic-label,
 #brightness-label {
-  font-size: 16px;
+  font-size: 18px;
+}
+
+#mic-label {
+  margin-top: 2px;
+  font-size: 18px;
 }
 
 #vol-label.muted,
